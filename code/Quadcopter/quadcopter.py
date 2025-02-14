@@ -2,26 +2,60 @@
 """
 Created on Thu Dec  5 14:09:01 2024
 
-@author: Jean-Baptiste
+@author: Jean-Baptiste Bouvier
 
-Quadcopter environment copied from John Viljoen
+Quadcopter environment modified from John Viljoen's
+https://github.com/johnviljoen/231A_project
 """
-import casadi as ca
+
+import torch
 import numpy as np
 
+from plots import plot_traj, traj_comparison
 
 class QuadcopterEnv():
     """
-    state:
-        x = {x,y,z,q0,q1,q2,q3,xd,yd,zd,p ,q ,r ,w0,w1,w2,w3}
-             0 1 2 3  4  5  6  7  8  9  10 11 12 13 14 15 16
+    This environment describes a fully nonlinear quadcopter
+
+    ## Action Space
+    | Num | Action                 | Min | Max | Name | Unit |
+    | --- | ---------------------- | --- | --- | ---- | ---- |
+    | 0   | Torque on first rotor  | -1  |  1  | w0d  |  N   |
+    | 1   | Torque on second rotor | -1  |  1  | w1d  |  N   |
+    | 2   | Torque on third rotor  | -1  |  1  | w2d  |  N   |
+    | 3   | Torque on fourth rotor | -1  |  1  | w3d  |  N   |
+
+    ## Observation Space
+    | Num | Observation                            | Min  | Max | Name | Unit  |
+    | --- | -------------------------------------- | ---- | --- | ---- | ----- |
+    | 0   | x-coordinate of the center of mass     | -Inf | Inf |  x   |  m    |
+    | 1   | y-coordinate of the center of mass     | -Inf | Inf |  y   |  m    |
+    | 2   | z-coordinate of the center of mass     | -Inf | Inf |  z   |  m    |
+    | 3   | w-orientaiont of the body (quaternion) | -Inf | Inf |  q0  |  rad  |
+    | 4   | x-orientaiont of the body (quaternion) | -Inf | Inf |  q1  |  rad  |
+    | 5   | y-orientaiont of the body (quaternion) | -Inf | Inf |  q2  |  rad  |
+    | 6   | z-orientaiont of the body (quaternion) | -Inf | Inf |  q3  |  rad  |
     
-    control:
-        u = {w0d,w1d,w2d,w3d}
-             0   1   2   3
+    | 7   | x-velocity of the center of mass       | -Inf | Inf |  xd  |  m/s  |
+    | 8   | y-velocity of the center of mass       | -Inf | Inf |  yd  |  m/s  |
+    | 9   | z-velocity of the center of mass       | -Inf | Inf |  zd  |  m/s  |
+    | 10  | x-angular velocity of the body         | -Inf | Inf |  p   | rad/s |
+    | 11  | y-angular velocity of the body         | -Inf | Inf |  q   | rad/s |
+    | 12  | z-angular velocity of the body         | -Inf | Inf |  r   | rad/s |
+    | 13  | angular velocity of the first rotor    | -Inf | Inf |  w0  | rad/s |
+    | 14  | angular velocity of the second rotor   | -Inf | Inf |  w1  | rad/s |
+    | 15  | angular velocity of the third rotor    | -Inf | Inf |  w2  | rad/s |
+    | 16  | angular velocity of the fourth rotor   | -Inf | Inf |  w3  | rad/s |
+
+    
+    ## Starting State
+    All observations start from hover with a Gaussian noise of magnitude `reset_noise_scale'
+    
+    ## Episode End
+    1. Any of the states goes out of bounds
+    2. The Quadcopter collides with one of the cylinder obstacles
 
     NOTES:
-    
     John integrated the proportional control of the rotors directly into the 
     equations of motion to more accurately reflect the closed loop system
     we will be controlling with a second outer loop. This inner loop is akin
@@ -30,10 +64,10 @@ class QuadcopterEnv():
     """
     
     
-    def __init__(self, reset_noise=1e-2, dt=0.01, cylinder_radii = [0.9, 0.9]):
-        """Reset normal noise on the whole state"""
+    def __init__(self, reset_noise_scale:float = 1e-2, dt: float = 0.01,
+                 cylinder_radii = [0.9, 0.9]):
         
-        self.name = "quad"
+        self.name = "Quadcopter"
         self.state_size = 17
         self.action_size = 4
         self.action_min = np.array([[-1., -1., -1., -1.]])
@@ -50,7 +84,7 @@ class QuadcopterEnv():
         self.cylinder_yc = [0.5, -0.5] # cylinders y center position
         
         
-        ### fundamental quad parameters
+        ### Fundamental quad parameters
         self.g = 9.81 # gravity (m/s^2)
         self.mB = 1.2 # mass (kg)
         self.dxm = 0.16 # arm length (m)
@@ -86,7 +120,7 @@ class QuadcopterEnv():
                                 # xyz      q0123        xdydzd   pdqdrd   w0123
         
         self.dt = dt # time step
-        self.reset_noise = reset_noise
+        self.reset_noise = reset_noise_scale
         self.hover_state = np.array([0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, *[522.9847140714692]*4])
         
         
@@ -111,7 +145,6 @@ class QuadcopterEnv():
     
 
     def step(self, u):
-        """Numpy"""
         
         q0 =    self.state[3]
         q1 =    self.state[4]
@@ -190,428 +223,73 @@ class QuadcopterEnv():
         return self.state.copy(), reward, terminated, False, None
 
 
-    def casadi_step(self, state: ca.MX, cmd: ca.MX):
-         """Returns next state of the Casadi state"""
-
-         # Import params to numpy for CasADI
-         # ---------------------------
-         IB = self.IB
-         IBxx = IB[0, 0]
-         IByy = IB[1, 1]
-         IBzz = IB[2, 2]
-
-         # Unpack state tensor for readability
-         # ---------------------------
-         q0 =    state[3]
-         q1 =    state[4]
-         q2 =    state[5]
-         q3 =    state[6]
-         xdot =  state[7]
-         ydot =  state[8]
-         zdot =  state[9]
-         p =     state[10]
-         q =     state[11]
-         r =     state[12]
-         wM1 =   state[13]
-         wM2 =   state[14]
-         wM3 =   state[15]
-         wM4 =   state[16]
-
-         # a tiny bit more readable
-         ThrM1 = self.kTh * wM1 ** 2
-         ThrM2 = self.kTh * wM2 ** 2
-         ThrM3 = self.kTh * wM3 ** 2
-         ThrM4 = self.kTh * wM4 ** 2
-         TorM1 = self.kTo * wM1 ** 2
-         TorM2 = self.kTo * wM2 ** 2
-         TorM3 = self.kTo * wM3 ** 2
-         TorM4 = self.kTo * wM4 ** 2
-
-         # Wind Model (zero in expectation)
-         # ---------------------------
-         velW, qW1, qW2 = 0, 0, 0
-
-         # State Derivatives (from PyDy) This is already the analytically solved vector of MM*x = RHS
-         # ---------------------------
-         DynamicsDot = ca.vertcat(
-                 xdot,
-                 ydot,
-                 zdot,
-                 -0.5 * p * q1 - 0.5 * q * q2 - 0.5 * q3 * r,
-                 0.5 * p * q0 - 0.5 * q * q3 + 0.5 * q2 * r,
-                 0.5 * p * q3 + 0.5 * q * q0 - 0.5 * q1 * r,
-                 -0.5 * p * q2 + 0.5 * q * q1 + 0.5 * q0 * r,
-                 (
-                     self.Cd
-                     * ca.sign(velW * ca.cos(qW1) * ca.cos(qW2) - xdot)
-                     * (velW * ca.cos(qW1) * ca.cos(qW2) - xdot) ** 2
-                     - 2 * (q0 * q2 + q1 * q3) * (ThrM1 + ThrM2 + ThrM3 + ThrM4)
-                 )
-                 / self.mB,
-                 (
-                     self.Cd
-                     * ca.sign(velW * ca.sin(qW1) * ca.cos(qW2) - ydot)
-                     * (velW * ca.sin(qW1) * ca.cos(qW2) - ydot) ** 2
-                     + 2 * (q0 * q1 - q2 * q3) * (ThrM1 + ThrM2 + ThrM3 + ThrM4)
-                 )
-                 / self.mB,
-                 (
-                     -self.Cd * ca.sign(velW * ca.sin(qW2) + zdot) * (velW * ca.sin(qW2) + zdot) ** 2
-                     - (ThrM1 + ThrM2 + ThrM3 + ThrM4)
-                     * (q0 ** 2 - q1 ** 2 - q2 ** 2 + q3 ** 2)
-                     + self.g * self.mB
-                 )
-                 / self.mB,
-                 (
-                     (IByy - IBzz) * q * r
-                     - self.usePrecession * self.IRzz * (wM1 - wM2 + wM3 - wM4) * q
-                     + (ThrM1 - ThrM2 - ThrM3 + ThrM4) * self.dym
-                 )
-                 / IBxx,  # uP activates or deactivates the use of gyroscopic precession.
-                 (
-                     (IBzz - IBxx) * p * r
-                     + self.usePrecession * self.IRzz * (wM1 - wM2 + wM3 - wM4) * p
-                     + (ThrM1 + ThrM2 - ThrM3 - ThrM4) * self.dxm
-                 )
-                 / IByy,  # Set uP to False if rotor inertia is not known (gyro precession has negigeable effect on drone dynamics)
-                 ((IBxx - IByy) * p * q - TorM1 + TorM2 - TorM3 + TorM4) / IBzz,
-                 cmd[0]/self.IRzz, cmd[1]/self.IRzz, cmd[2]/self.IRzz, cmd[3]/self.IRzz
-         )
-
-         if DynamicsDot.shape[1] == 17:
-             print('fin')
-
-         # State Derivative Vector
-         next_state = state + DynamicsDot * self.dt
-         return next_state
-
-
-#%% Figures and animations
-
-import matplotlib.pyplot as plt
-import matplotlib.patches as pat
-from scipy.spatial.transform import Rotation as R
-
-def quaternion_to_rotation_matrix(q):
-    """   Convert a quaternion into a rotation matrix.   """
-    q0, q1, q2, q3 = q
-    R = np.array([
-        [1 - 2*(q2**2 + q3**2),     2*(q1*q2 - q0*q3),     2*(q1*q3 + q0*q2)],
-        [    2*(q1*q2 + q0*q3), 1 - 2*(q1**2 + q3**2),     2*(q2*q3 - q0*q1)],
-        [    2*(q1*q3 - q0*q2),     2*(q2*q3 + q0*q1), 1 - 2*(q1**2 + q2**2)]
-    ])
-    return R
-
-
-def plot_traj(env, Traj, title=None):
-    """Plot the important components of a given quadcopter trajectory"""
-    
-    assert len(Traj.shape) == 2, "Trajectory must be a 2D array"
-    assert Traj.shape[1] == env.state_size, "Trajectory must contain the full state"
-    T = Traj.shape[0]
-    time = env.dt * np.arange(T)
-    
-    fig, ax = nice_plot()
-    if title is not None:
-        plt.title(title)
-    plt.plot(time, Traj[:,0], label="x", linewidth=3)
-    plt.plot(time, Traj[:,1], label="y", linewidth=3)
-    plt.plot(time, Traj[:,2], label="z", linewidth=3)
-    plt.xlabel("t (s)")
-    plt.ylabel("orientation (deg)")
-    plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
-    plt.show()
-    
-    fig, ax = nice_plot()
-    if title is not None:
-        plt.title(title)
-    for rotor_id in range(1,5):
-        plt.plot(time, Traj[:, -rotor_id], label=f"rotor {rotor_id}", linewidth=3)
-    plt.xlabel("t (s)")
-    plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
-    plt.show()
-    
-    rot = np.zeros((T, 3))
-    quat_scalar_last = np.concatenate((Traj[:, 4:7],Traj[:, 3].reshape((T,1))), axis=1)
-   
-    for i in range(T):
-        rot[i] = R.from_quat(quat_scalar_last[i]).as_euler('xyz', degrees=True)
-        if i > 1:
-            for angle in range(3):
-                while rot[i, angle] > rot[i-1, angle] + 180:
-                    rot[i, angle] -= 90*2
-                while rot[i, angle] < rot[i-1, angle] - 180:
-                    rot[i, angle] += 90*2
-    
-    fig, ax = nice_plot()
-    if title is not None:
-        plt.title(title)        
-    plt.plot(time, rot[:, 0], label="roll x", linewidth=3)
-    plt.plot(time, rot[:, 1], label="pitch y", linewidth=3)
-    plt.plot(time, rot[:, 2], label="yaw z", linewidth=3)
-    plt.xlabel("t (s)")
-    plt.yticks([-180, -90, 0, 90, 180])
-    plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
-    plt.show()
-
-
-def plot_xy_path(env, Traj):
-
-    radii = env.cylinder_radii # [0.9, 0.9] # radius
-    xc = env.cylinder_xc # [2.5, 5.2] # cylinder x center position
-    yc = env.cylinder_yc # [0.5, -0.5] # cylinder y center position
-
-    fig, ax = nice_plot()
-    plt.axis("equal")
-    for i in range(len(radii)):
-        cylinder = pat.Circle(xy=[xc[i], yc[i]], radius=radii[i], color="red")
-        ax.add_patch(cylinder)
-    plt.plot(Traj[:,0], Traj[:,1], linewidth=3)
-    plt.xlabel("x")
-    plt.ylabel("y")
-    plt.show()
-
-
-def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
-                    traj_3=None, label_3=None, traj_4=None, label_4=None,
-                    saveas: str = None, legend_loc='best'):
-    
-    """Compares given quadcopter trajectories.
-    Optional argument 'saveas' takes the filename to save the plots if desired"""
-    
-    assert len(traj_1.shape) == 2, "Trajectory 1 must be a 2D array"
-    assert len(traj_2.shape) == 2, "Trajectory 2 must be a 2D array"
-    if traj_3 is not None:
-        assert len(traj_3.shape) == 2, "Trajectory 3 must be a 2D array"
-    if traj_4 is not None:
-        assert len(traj_4.shape) == 2, "Trajectory 4 must be a 2D array"
-    
-    radii = env.cylinder_radii # [0.9, 0.9] # radius
-    xc = env.cylinder_xc # [2.5, 5.2] # cylinder x center position
-    yc = env.cylinder_yc # [0.5, -0.5] # cylinder y center position
-
-    fig, ax = nice_plot()
-    if title is not None:
-        plt.title(title)
-    plt.axis("equal")
-    for i in range(len(radii)):
-        cylinder = pat.Circle(xy=[xc[i], yc[i]], radius=radii[i], color="red")
-        ax.add_patch(cylinder)
-    plt.plot(traj_1[:,0], traj_1[:,1], label=label_1, linewidth=3)
-    plt.plot(traj_2[:,0], traj_2[:,1], label=label_2, linewidth=3)
-    if traj_3 is not None:
-        plt.plot(traj_3[:,0], traj_3[:,1], label=label_3, linewidth=3)
-    if traj_4 is not None:
-        plt.plot(traj_4[:,0], traj_4[:,1], label=label_4, linewidth=3)
-    plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9, loc=legend_loc)
-    plt.xlabel("x")
-    plt.ylabel("y")
-    if saveas is not None:
-        plt.savefig(saveas + "_trajs.svg", bbox_inches='tight', format="svg", dpi=1200)
-    plt.show()
-    
-    # TODO: make it compatible with QuadEnv
-    # time_1 = env.dt * np.arange(traj_1.shape[0])
-    # time_2 = env.dt * np.arange(traj_2.shape[0])
-    # time_max = max(time_1[-1], time_2[-1])
-    
-    # fig, ax = nice_plot()
-    # if title is not None:
-    #     plt.title(title)
-    # plt.plot(time_1, traj_1[:, 2]*180/np.pi, label=label_1, linewidth=3)
-    # plt.plot(time_2, traj_2[:, 2]*180/np.pi, label=label_2, linewidth=3)
-    # y_max = max(traj_1[:, 2].max(), traj_2[:, 2].max())
-    # y_min = min(traj_1[:, 2].min(), traj_2[:, 2].min())
-    # if traj_3 is not None:
-    #     time_3 = env.dt * np.arange(traj_3.shape[0])
-    #     time_max = max(time_max, time_3[-1])
-    #     plt.plot(time_3, traj_3[:, 2]*180/np.pi, label=label_3, linewidth=3)
-    #     y_max = max(traj_3[:, 2].max(), y_max)
-    #     y_min = min(traj_3[:, 2].min(), y_min)
-    # if traj_4 is not None:
-    #     time_4 = env.dt * np.arange(traj_4.shape[0])
-    #     time_max = max(time_max, time_4[-1])
-    #     plt.plot(time_4, traj_4[:, 2]*180/np.pi, label=label_4, linewidth=3)
-    #     y_max = max(traj_4[:, 2].max(), y_max)
-    #     y_min = min(traj_4[:, 2].min(), y_min)
-    
-    # min_angle = env.min_angle*180/np.pi
-    # max_angle = env.max_angle*180/np.pi
-    # plt.plot([0., time_max], [min_angle, min_angle], color="red", linestyle="dashed", linewidth=1)
-    # plt.plot([0., time_max], [max_angle, max_angle], color="red", linestyle="dashed", linewidth=1)
-    # ax.set_ylim([max(min_angle-10, (y_min-0.1*abs(y_min))*180/np.pi), min(max_angle+10, y_max*180/np.pi*1.1)])
-    
-    # plt.ylabel("Front tip angle (deg)")
-    # plt.xlabel("time (s)")
-    # # ax.set_ylim([(y_min-0.1*abs(y_min))*180/np.pi, y_max*180/np.pi*1.1])
-    # plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9, loc=legend_loc)
-    # if saveas is not None:
-    #     plt.savefig(saveas + "_angle.svg", bbox_inches='tight', format="svg", dpi=1200)
-    # plt.show()
-
-
-
-
-def nice_plot():
-    """Makes the plot nice"""
-    fig = plt.gcf()
-    ax = fig.gca()
-    plt.rcParams.update({'font.size': 16})
-    plt.rcParams['font.sans-serif'] = ['Palatino Linotype']
-    ax.spines['bottom'].set_color('w')
-    ax.spines['top'].set_color('w') 
-    ax.spines['right'].set_color('w')
-    ax.spines['left'].set_color('w')
-    
-    return fig, ax
-
-
-
-
-
-
-
-
-
-
-
-from matplotlib import animation
-
-class Animator:
-    def __init__(self, env, x, r,
-            max_frames = 500, # 500 works for my 16GB RAM machine
-            dt = 0.1, # I think timestep of the frames of the gif
-            save_path='figures/gifs/test.gif',
-            title='test'
-        ):
-
-        t = np.arange(0, env.dt, x.shape[0]*env.dt)
-        num_steps = len(t)
-        max_frames = max_frames
+    # Function called by the projectors
+    def pos_from_vel(self, S_t, vel_t_dt):
+        """
+        Calculates the next state's position using explicit Euler integrator
+        and quaternion formula, does NOT need to know the dynamics.
         
-        def compute_render_interval(num_steps, max_frames):
-            render_interval = 1  # Start with rendering every frame.
-            # While the number of frames using the current render interval exceeds max_frames, double the render interval.
-            while num_steps / render_interval > max_frames:
-                render_interval *= 2
-            return render_interval
+        Arguments:
+            - S_t : current state torch.tensor (17,)
+            - vel_t_dt : (unused) next state's velocity torch.tensor (10,)
+        Returns:
+            - x_t_dt : next state's position torch.tensor (7,)
+        """
+        x_t_dt = S_t[:7].clone() # copy the current position
+        q0 =    S_t[3]
+        q1 =    S_t[4]
+        q2 =    S_t[5]
+        q3 =    S_t[6]
+        xdot =  S_t[7]
+        ydot =  S_t[8]
+        zdot =  S_t[9]
+        p =     S_t[10]
+        q =     S_t[11]
+        r =     S_t[12]
         
-        render_interval = compute_render_interval(num_steps, max_frames)
+        x_t_dt += self.dt*torch.FloatTensor([xdot, ydot, zdot,
+                                   -0.5*p*q1 - 0.5*q*q2 - 0.5*q3*r,
+                                    0.5*p*q0 - 0.5*q*q3 + 0.5*q2*r,
+                                    0.5*p*q3 + 0.5*q*q0 - 0.5*q1*r,
+                                   -0.5*p*q2 + 0.5*q*q1 + 0.5*q0*r]).to(S_t.device)
 
-        self.save_path = save_path
-        self.dt = dt
-        self.rp = None
-        self.env = env
-        self.x = x[::render_interval,:]
-        self.t = t[::render_interval]
-        self.r = r[::render_interval,:]
+        return x_t_dt
 
-        # Instantiate the figure
-        self.fig = plt.figure()
-        self.ax = self.fig.add_subplot(projection='3d')
+    # Plotting functions
+    def plot_traj(self, Traj, title:str = ""):
+        """Plots the xy trajectory of the Quadcopter."""
+        plot_traj(self, Traj, title)
 
-        # Draw the reference x y z (doesnt matter if static or dynamic)
-        self.ax.plot(self.r[:,0], self.r[:,1], self.r[:,2], ':', lw=1.3, color='green')
-        # these are the lines that draw the quadcopter
-        self.line1, = self.ax.plot([], [], [], lw=2, color='red')
-        self.line2, = self.ax.plot([], [], [], lw=2, color='blue')
-        self.line3, = self.ax.plot([], [], [], '--', lw=1, color='blue')
-
-        # Setting the limits correctly
-        extra_each_side = 0.5
-
-        x_min = min(np.min(self.x[:,0]), np.min(self.r[:,0]))
-        y_min = min(np.min(self.x[:,1]), np.min(self.r[:,1]))
-        z_min = min(np.min(self.x[:,2]), np.min(self.r[:,2]))
-        x_max = max(np.max(self.x[:,0]), np.max(self.r[:,0]))
-        y_max = max(np.max(self.x[:,1]), np.max(self.r[:,1]))
-        z_max = max(np.max(self.x[:,2]), np.max(self.r[:,2]))
-
-        max_range = 0.5*np.array([x_max-x_min, y_max-y_min, z_max-z_min]).max() + extra_each_side
-        mid_x = 0.5*(x_max+x_min)
-        mid_y = 0.5*(y_max+y_min)
-        mid_z = 0.5*(z_max+z_min)
-        
-        self.ax.set_xlim3d([mid_x-max_range, mid_x+max_range])
-        self.ax.set_xlabel('X')
-        self.ax.set_ylim3d([mid_y-max_range, mid_y+max_range]) # NEU?
-
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlim3d([mid_z-max_range, mid_z+max_range])
-        self.ax.set_zlabel('Altitude')
-
-        # add a dynamic time to the plot
-        self.title_time = self.ax.text2D(0.05, 0.95, "", transform=self.ax.transAxes)
-
-        # add the title itself
-        title = self.ax.text2D(0.95, 0.95, title, transform=self.ax.transAxes, horizontalalignment='right')
-
-    def update_lines(self, k):
-        
-        # current time
-        tk = self.t[k]
-
-        # history of x from 0 to current timestep k
-        x_0k = self.x[0:k+1]
-        xk = self.x[k]
-
-        q_0k = np.array([
-            self.x[0:k+1,3],
-            self.x[0:k+1,4],
-            self.x[0:k+1,5],
-            self.x[0:k+1,6]
-        ])
-        qk = q_0k[:,-1]
-
-        R = quaternion_to_rotation_matrix(qk)
-
-        motor_points = R @ np.array([
-            [self.env.dxm, -self.env.dym, self.env.dzm], 
-            [0, 0, 0], 
-            [self.env.dxm, self.env.dym, self.env.dzm], 
-            [-self.env.dxm, self.env.dym, self.env.dzm], 
-            [0, 0, 0], 
-            [-self.env.dxm, -self.env.dym, self.env.dzm]
-        ]).T
-        motor_points[0:3,:] += xk[0:3][:,None]
-
-        # plot the current point of the reference along the reference
-        if self.rp is not None:
-            self.rp.remove()
-        self.rp = self.ax.scatter(self.r[k,0], self.r[k,1], self.r[k,2], color='magenta', alpha=1, marker = 'o', s = 25)
-
-        self.line1.set_data(motor_points[0,0:3], motor_points[1,0:3])
-        self.line1.set_3d_properties(motor_points[2,0:3])
-        self.line2.set_data(motor_points[0,3:6], motor_points[1,3:6])
-        self.line2.set_3d_properties(motor_points[2,3:6])
-        self.line3.set_data(x_0k[:,0], x_0k[:,1])
-        self.line3.set_3d_properties(x_0k[:,2])
-        self.title_time.set_text(u"Time = {:.2f} s ".format(tk))
-
-    def ini_plot(self):
-
-        self.line1.set_data(np.empty([1]), np.empty([1]))
-        self.line1.set_3d_properties(np.empty([1]))
-        self.line2.set_data(np.empty([1]), np.empty([1]))
-        self.line2.set_3d_properties(np.empty([1]))
-        self.line3.set_data(np.empty([1]), np.empty([1]))
-        self.line3.set_3d_properties(np.empty([1]))
-
-        return self.line1, self.line2, self.line3   
-
-    def animate(self):
-        line_ani = animation.FuncAnimation(
-            self.fig, 
-            self.update_lines, 
-            init_func=self.ini_plot, 
-            frames=len(self.t)-1, 
-            interval=(self.dt*10), 
-            blit=False)
-
-        line_ani.save(self.save_path, dpi=120, fps=25)
-
-        return line_ani
     
+    def traj_comparison(self, traj_1, label_1, traj_2, label_2, title:str = "",
+                        traj_3=None, label_3=None, traj_4=None, label_4=None,
+                        legend_loc='best'):
+        """
+        Compares up to 4 xy trajectories of the Quadcopter
+        Arguments:
+            - traj_1 : first trajectory of shape (H, 17)
+            - label_1 : corresponding label to display
+            - traj_2 : first trajectory of shape (H, 17)
+            - label_2 : corresponding label to display
+            - title: optional title of the plot
+            - traj_3 : optional third trajectory of shape (H, 17)
+            - label_3 : optional corresponding label to display
+            - traj_4 : optional fourth trajectory of shape (H, 17)
+            - label_4 : optional corresponding label to display
+            - legend_loc : optional location of the legend
+        """
+        traj_comparison(self, traj_1, label_1, traj_2, label_2, title,
+                        traj_3, label_3, traj_4, label_4, legend_loc)
+
+         
+
+
+
+
+
+
+
+
 
 
 

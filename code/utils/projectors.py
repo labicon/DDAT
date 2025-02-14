@@ -247,41 +247,13 @@ class Projector():
             
             # Calculates the next state
             adm_S_t_dt[traj_id, self.vel] = Vertices @ solution
-            adm_S_t_dt[traj_id, self.pos] = pos_from_vel(S_t[traj_id, self.pos], adm_S_t_dt[traj_id, self.vel], self.dt)
+            adm_S_t_dt[traj_id, self.pos] = self.env.pos_from_vel(S_t[traj_id], adm_S_t_dt[traj_id, self.vel])
         
         if normalized: # Normalize admissible state
             adm_S_t_dt = self.normalizer.normalize(adm_S_t_dt)
         
         return adm_S_t_dt, adm_A_t
     
-
-#%% Unitree GO2 specific formula
-
-def pos_from_vel(pos_t, vel_t_dt, dt):
-    """Given current position 'pos_t' and next velocity 'vel_t_dt',
-    calculates the next position 'pos_t_dt' using semi-implicit Euler integrator 
-    and quaternion formula"""
-    
-    pos_t_dt = pos_t[:19].copy() # copy the current position
-    pos_t_dt[:3] += vel_t_dt[:3]*dt # linear position update
-    pos_t_dt[-12:] += vel_t_dt[-12:]*dt # angles updates
-    
-    # Quaternion update
-    q0 = pos_t[3]
-    q1 = pos_t[4]
-    q2 = pos_t[5]
-    q3 = pos_t[6]
-    
-    p = vel_t_dt[3]
-    q = vel_t_dt[4]
-    r = vel_t_dt[5]
-    
-    pos_t_dt[3:7] += dt*torch.tensor([-0.5*p*q1 - 0.5*q*q2 - 0.5*q3*r,
-                                       0.5*p*q0 - 0.5*q*q3 + 0.5*q2*r,
-                                       0.5*p*q3 + 0.5*q*q0 - 0.5*q1*r,
-                                      -0.5*p*q2 + 0.5*q*q1 + 0.5*q0*r])
-
-    return pos_t_dt
 
 
 

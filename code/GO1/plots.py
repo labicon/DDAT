@@ -11,45 +11,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def plot_traj(env, Traj, Actions=None, title="", plot_all=False):
-    """Plots the trajectory of the Unitree GO2.
-    state = [positions, velocities] """
+def plot_traj(env, Traj, title=""):
+    """Plots the xy trajectory of the Unitree GO1."""
         
     fig, ax = nice_plot()
-    # N = Traj.shape[0] # number of steps of the trajectory before terminating
-    # time = env.dt * np.arange(N)
-    if title is not None:
-        plt.title(title)
+    plt.title(title)
     plt.plot(Traj[:, 0], Traj[:, 1], linewidth=3)
     plt.ylabel("y (m)")
     plt.xlabel("x (m)")
     plt.show()       
 
     
-    
-    # for state_id in range(env.state_size):
-    #     fig, ax = nice_plot()
-    #     plt.title(title)
-    #     plt.scatter(time, Traj[:, state_id], s=10)
-    #     plt.ylabel(env.state_labels[state_id])
-    #     plt.xlabel("time (s)")
-    #     plt.show()
 
-    # if Actions is not None:
-    #     time = env.dt * np.arange(Actions.shape[0])
-    #     for action_id in range(env.action_size):
-    #         fig, ax = nice_plot()
-    #         plt.title(title)
-    #         plt.scatter(time, Actions[:, action_id], s=10)
-    #         plt.ylabel(env.action_labels[action_id])
-    #         plt.xlabel("time (s)")
-    #         plt.show()
-   
- 
 def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
                     traj_3=None, label_3=None, traj_4=None, label_4=None,
-                    saveas: str = None, plot_z = True, legend_loc='best'):
-    """Compares given Unitree GO2 trajectories.
+                    plot_z = True, legend_loc='best'):
+    """Compares given Unitree GO1 trajectories.
     Optional argument 'saveas' takes the filename to save the plots if desired"""
     
     
@@ -66,8 +43,7 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
     
        
     fig, ax = nice_plot()
-    if title is not None:
-        plt.title(title)
+    plt.title(title)
     plt.plot(traj_1[:, 0], traj_1[:, 1], label=label_1, linewidth=3)
     plt.plot(traj_2[:, 0], traj_2[:, 1], label=label_2, linewidth=3)
     if traj_3 is not None:
@@ -77,8 +53,6 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
     plt.ylabel("y (m)")
     plt.xlabel("x (m)")
     plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9, loc=legend_loc)
-    if saveas is not None:
-        plt.savefig(saveas + "_xy_traj.pdf", bbox_inches='tight', format="pdf", dpi=1200)
     plt.show()       
 
     
@@ -89,8 +63,7 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
         time_max = max(time_1[-1], time_2[-1])
         
         fig, ax = nice_plot()
-        if title is not None:
-            plt.title(title)
+        plt.title(title)
         plt.plot(time_1, traj_1[:, 2], label=label_1, linewidth=3)
         plt.plot(time_2, traj_2[:, 2], label=label_2, linewidth=3)
         z_max = max(traj_1[:, 2].max(), traj_2[:, 2].max())
@@ -112,8 +85,6 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
         plt.xlabel("time (s)")
         ax.set_ylim([max(env.min_height-0.1, z_min-0.1*abs(z_min)), z_max*1.1])
         plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
-        if saveas is not None:
-            plt.savefig(saveas + "_height.pdf", bbox_inches='tight', format="pdf", dpi=1200)
         plt.show()
 
 
@@ -122,7 +93,6 @@ def nice_plot():
     fig = plt.gcf()
     ax = fig.gca()
     plt.rcParams.update({'font.size': 16})
-    plt.rcParams['font.sans-serif'] = ['Palatino Linotype']
     ax.spines['bottom'].set_color('w')
     ax.spines['top'].set_color('w') 
     ax.spines['right'].set_color('w')

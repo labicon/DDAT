@@ -8,11 +8,13 @@ Gymnasium Environment for the Unitree GO2
 """
 
 import os
+import torch
 import numpy as np
 from gymnasium import utils
 from gymnasium.spaces import Box
 from gymnasium.envs.mujoco import MujocoEnv
 
+from plots import plot_traj, traj_comparison
 
 DEFAULT_CAMERA_CONFIG = {"distance": 6.0}
 menagerie_path = './Unitree_go2'
@@ -122,7 +124,7 @@ class Go2Env(MujocoEnv, utils.EzPickle):
     All observations start with 0 velocity from position
     [0, 0, 0.27, 1, 0, 0, 0, 0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0.9, -1.8, 0, 0.9, -1.8] 
     with a uniform noise in the range of [-`reset_noise_scale`, `reset_noise_scale`]
-    added to the positio. 
+    added to the position. 
     
     ## Episode End
     1. Any of the leg joint angles is **not** in [-0.7, 0.52]*[-1.0, 2.1]*[-2.2, -0.4]
@@ -290,40 +292,67 @@ class Go2Env(MujocoEnv, utils.EzPickle):
         # Penalize changes in action
         return -0.01*np.sum(np.square(action - self.info['last_act']))
     
-      
+
+    # Function called by the projectors 
+    def pos_from_vel(self, S_t, vel_t_dt):
+        """
+        Calculates next state's position using semi-implicit Euler integrator
+        and quaternion formula, does NOT need to know the dynamics.
+
+        Arguments:
+            - S_t : current state torch.tensor (37,)
+            - vel_t_dt : next state's velocity torch.tensor (18,)
+        Returns:
+            - pos_t_dt : next state's position torch.tensor (19,)
+        """
+        pos_t_dt = S_t[:19].clone() # copy the current position
+        pos_t_dt[:3] += vel_t_dt[:3] * self.dt # linear position update
+        pos_t_dt[-12:] += vel_t_dt[-12:] * self.dt # angles updates
+        
+        # Quaternion update
+        q0 = S_t[3]
+        q1 = S_t[4]
+        q2 = S_t[5]
+        q3 = S_t[6]
+        
+        p = vel_t_dt[3]
+        q = vel_t_dt[4]
+        r = vel_t_dt[5]
+        
+        pos_t_dt[3:7] += self.dt * torch.tensor([-0.5*p*q1 - 0.5*q*q2 - 0.5*q3*r,
+                                                  0.5*p*q0 - 0.5*q*q3 + 0.5*q2*r,
+                                                  0.5*p*q3 + 0.5*q*q0 - 0.5*q1*r,
+                                                 -0.5*p*q2 + 0.5*q*q1 + 0.5*q0*r]).to(S_t.device)
+        return pos_t_dt
     
 
-                  
-                
+    # Plotting functions
+    def plot_traj(self, Traj, title:str = ""):
+        """Plots the xy trajectory of the Unitree GO2."""
+        plot_traj(self, Traj, title)
 
-
-
-#%%
-def pos_from_vel(pos_t, vel_t_dt, dt):
-    """Given current position pos_t and next velocity vel_t_dt,
-    calculates the next position pos_t_dt using semi-implicit Euler integrator 
-    and quaternion formula"""
     
-    pos_t_dt = pos_t[:19].copy() # copy the current position
-    pos_t_dt[:3] += vel_t_dt[:3]*dt # linear position update
-    pos_t_dt[-12:] += vel_t_dt[-12:]*dt # angles updates
-    
-    # Quaternion update
-    q0 = pos_t[3]
-    q1 = pos_t[4]
-    q2 = pos_t[5]
-    q3 = pos_t[6]
-    
-    p = vel_t_dt[3]
-    q = vel_t_dt[4]
-    r = vel_t_dt[5]
-    
-    pos_t_dt[3:7] += dt*np.array([-0.5 * p * q1 - 0.5 * q * q2 - 0.5 * q3 * r,
-                                  0.5 * p * q0 - 0.5 * q * q3 + 0.5 * q2 * r,
-                                  0.5 * p * q3 + 0.5 * q * q0 - 0.5 * q1 * r,
-                                 -0.5 * p * q2 + 0.5 * q * q1 + 0.5 * q0 * r])
-
-    return pos_t_dt
+    def traj_comparison(self, traj_1, label_1, traj_2, label_2, title:str = "",
+                        traj_3=None, label_3=None, traj_4=None, label_4=None,
+                        plot_z:bool = True, legend_loc='best'):
+        """
+        Compares up to 4 trajectories of the Unitree GO2
+        Arguments:
+            - traj_1 : first trajectory of shape (H, 37)
+            - label_1 : corresponding label to display
+            - traj_2 : first trajectory of shape (H, 37)
+            - label_2 : corresponding label to display
+            - title: optional title of the plot
+            - traj_3 : optional third trajectory of shape (H, 37)
+            - label_3 : optional corresponding label to display
+            - traj_4 : optional fourth trajectory of shape (H, 37)
+            - label_4 : optional corresponding label to display
+            - plot_z : optional whether to plot the body height
+            - legend_loc : optional location of the legend
+        """
+        traj_comparison(self, traj_1, label_1, traj_2, label_2, title,
+                        traj_3, label_3, traj_4, label_4,
+                        plot_z, legend_loc)
 
 
 
