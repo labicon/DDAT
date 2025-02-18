@@ -21,13 +21,7 @@ from plots import plot_traj, traj_comparison
 
 class HopperEnv():
     """
-    Wrapper for the Hopper Environment    
-    
-    The hopper is a two-dimensional one-legged figure that consist of four body parts:
-    torso at the top, thigh in the middle, leg at the bottom, and a single foot on
-    which the entire body rests. The goal is to make hops that move in the
-    forward (right) direction by applying torques on the three hinges
-    connecting the four body parts.
+    Wrapper for the Hopper MuJoCo Environment
     
     | Num | Action                             | Min | Max |     Name    | Joint | Unit         |
     |-----|------------------------------------|-----|-----|-------------|-------|--------------|
@@ -58,10 +52,9 @@ class HopperEnv():
     - *ctrl_cost*: A cost for penalising the hopper if it takes actions that are too large. 
     """
 
-    def __init__(self, render_mode=None, seed=12):
+    def __init__(self, render_mode=None, seed=0):
         
         self.name = "Hopper"
-        self.parallel = False # cannot run several systems in parallel
         self.max_episode_steps = 2000
         self.reward_threshold = 1.3*self.max_episode_steps
         self.render_mode = render_mode
@@ -82,7 +75,7 @@ class HopperEnv():
         self.noise_scale = 5e-2 # base value is 5e-3
         self.env = gym.make(self.spec, reset_noise_scale=self.noise_scale,
                             exclude_current_positions_from_observation=False) # adds the x-position
-        assert self.env.model.opt.integrator == 0, "Select 'Euler' for the integrator in the XML file at 'conda-env/Lib/site-packages/gymnasium/envs/mujoco/assets' "
+        assert self.env.model.opt.integrator == 0, "Select 'Euler' for the integrator in the XML file at '<<NAME_OF_YOUR_CONDA_ENVIRONMENT>>/Lib/site-packages/gymnasium/envs/mujoco/assets' "
         assert self.env.frame_skip == 1, "Need frame_skip = 1, i.e., single time step between states. Change in hopper_v4.py line 209 and time step 0.008 in XML next to integrator"
         self.metadata = self.env.metadata
         
@@ -117,13 +110,16 @@ class HopperEnv():
     def reset(self):
         self.episode_step = 0
         self.state, _ = self.env.reset()
+        self.env.data.qacc_warmstart[:] = 0 # reset for reproducibility
         return self.state.copy()
      
     
     def step(self, action):
+        assert type(action) == np.ndarray, f"action must be a numpy array and not a {type(action)}"
+        assert action.shape == (self.action_size,), f"action must be of size {self.action_size} and not {action.shape}"
         self.episode_step += 1
         obs, reward, terminated, truncated, info = self.env.step(action)
-        self.state = np.concatenate((self.env.data.qpos, self.env.data.qvel))
+        self.state = np.concatenate((self.env.data.qpos, self.env.data.qvel)) # because obs is truncated at +-10
         done = terminated or truncated or self.episode_step > self.max_episode_steps
         
         return self.state.copy(), reward, done, False, None
@@ -133,12 +129,14 @@ class HopperEnv():
         """New function: reset the state to the one provided.
         Split the state into qpos and qvel to use  env.set_state(qpos, qvel)"""
         
+        assert state.shape == (self.state_size,)
         qpos = state[:6] # desired positions (x, z, theta_top, theta_thigh, theta_leg, theta_foot)  
         qvel = state[6:] # desired velocities (d/dt positions)
         self.env.reset()
         self.env.set_state(qpos, qvel) # Mujoco method to set state
+        self.env.data.qacc_warmstart[:] = 0
         self.state = np.concatenate((self.env.data.qpos, self.env.data.qvel))
-        if np.linalg.norm(self.state - state) > 1e-5:
+        if np.linalg.norm(self.state - state) > 1e-10:
             print("states dont match") # observation is clipped at 10 (except maybe x)
         self.episode_step = 0
         return self.state.copy()
@@ -191,10 +189,4 @@ class HopperEnv():
         """
         traj_comparison(self, traj_1, label_1, traj_2, label_2, title,
                         traj_3, label_3, traj_4, label_4, legend_loc)
-
-         
-    
-
-    
-  
 

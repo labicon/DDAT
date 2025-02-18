@@ -98,24 +98,30 @@ def vertices(LBs, UBs):
   
 #%% Admissibility utils
 
+@torch.no_grad()
+def open_loop(env, s0: np.array, actions: torch.Tensor, attr: torch.Tensor = None):
+    """Compute the open-loop trajectory from s0 by applying the given actions
 
-def open_loop(env, obs_0: np.array, actions: torch.Tensor):
-    """Compute the open-loop trajectory obtained when starting from initial observation
-    'obs_0' and applying the sequence 'actions' 
-    Inputs: obs_0: (state_size)   actions: (horizon, action_size)
-    Outputs: total_reward   ratio of time steps before trajectory fails
-                resulting trajectory (horizon+1, action_size)"""
-    
+    Arguments:
+        - s0 : initial state (state_size,)
+        - actions : sequence of actions to apply open-loop (horizon, action_size)
+        - attr : optional conditioning attribute (attr_dim,)
+
+    Returns: 
+        - reward : total reward collected over the trajectory
+        - survival : ratio of time steps before trajectory fails
+        - resulting trajectory of size (horizon+1, state_size)
+    """
     if type(actions) == torch.Tensor:
-        actions = actions.numpy()
-    if type(obs_0) == torch.Tensor:
-        obs_0 = obs_0.numpy()
+        actions = actions.cpu().numpy()
+    if type(s0) == torch.Tensor:
+        s0 = s0.cpu().numpy()
         
     H, _ = actions.shape
     total_reward = 0.
-    env.reset_to(obs_0)
+    env.reset_to(s0)
     traj = np.zeros((H+1, env.state_size))
-    traj[0] = obs_0
+    traj[0] = s0
     
     for t in range(H):
         next_obs, reward, done, _, _ = env.step(actions[t])
@@ -128,9 +134,9 @@ def open_loop(env, obs_0: np.array, actions: torch.Tensor):
 
 
 
-
+@torch.no_grad()
 def open_loop_stats(env, planner, ID, N_s0=100, s0=None, H=300, N_samples=4,
-                    attr=None, N:int=None):#, is_planner_true=False):
+                    attr=None, N:int=None):
     """ Calculate the reward and survival for a given planner
     If s0 is not provided, 'N_s0' random initial states are drawn
     For each of these initial states 'N_samples' trajectories are generated and only the best one is kept
@@ -178,57 +184,25 @@ def open_loop_stats(env, planner, ID, N_s0=100, s0=None, H=300, N_samples=4,
 
 
 
-def closed_loop_stats(env, planner, N_samples, s0, test_H, H, mID):
-    """planner: Planner of the ODE
-    N_samples: int
-    s0: initial state for the trajectory propagation
-    test_H: int  horizon for the planning
-    H: int full horizon
-    mID: Inverse Dynamics
-
-    reward_samples: 
-    survival_samples:     """
-    
-    reward_samples = np.zeros(N_samples)
-    survival_samples = np.zeros(N_samples)
-    
-    for sample_id in range(N_samples):
-        s = copy.deepcopy(s0)
-        sampled = np.zeros((H, env.state_size))
-        admissible = np.zeros((H, env.state_size))
-        
-        for t in range(0, H, test_H):
-            traj = planner.traj(s, traj_len=test_H, projector=planner.ode.projector)
-            ID_traj, actions, _ = mID.closest_admissible_traj(traj[0])
-            reward, survival, open_loop_traj = open_loop(env, s, actions)
-            reward_samples[sample_id] += reward
-            survival_samples[sample_id] += survival*test_H/H
-            sampled[t:t+test_H] = traj[0]
-            admissible[t:t+test_H] = open_loop_traj
-            if survival < 1: # not survived horizon test_H
-                t += round(survival*test_H +1)
-                break
-            s = open_loop_traj[-1] # replan from the last state
-        # traj_comparison(env, sampled[:t], "sampled", admissible[:t], "admissible")
-    
-    return reward_samples, survival_samples
 
 
 
 
-def barplot_comparison(labels, list_of_survival, list_of_rewards,
-                       list_of_survival_std=None,
-                       list_of_rewards_std=None, title="",
-                       save_as_svg=None):
-    """ Bar plot of the rewards and survival 
-    save_as_svg="open_loop"
+def barplot_comparison(labels:list, list_of_survival:list, list_of_rewards:list,
+                       list_of_survival_std:list = None,
+                       list_of_rewards_std:list = None, title:str = ""):
+    """ Bar plot of the rewards and survival of several models
+
+    Arguments:
+        - labels : list of the names of each models evaluated
+        - list_of_survival : list of the corresponding survival of each model in [0, 1]
+        - list_of_rewards : list of the corresponding reward of each model
+        - list_of_survival_std : optional list of the survival standard deviation of each model
+        - list_of_rewards_std : optional list of the reward standard deviation of each model
+        - title : optional title of the plots
     """
     assert len(labels) == len(list_of_survival), "Number of labels not matching the number of survival stats"
     assert len(labels) == len(list_of_rewards), "Number of labels not matching the number of reward stats"
-    
-    
-    # list_of_colors = ['silver', 'tab:blue', 'dimgray', 'gray', 'lightgray', 'darkgray', 'slategray']
-    list_of_colors = ['silver', 'dimgray', 'gray', 'tab:blue', 'lightgray', 'darkgray', 'slategray']
     
     nb_models = len(labels)
     
@@ -238,14 +212,13 @@ def barplot_comparison(labels, list_of_survival, list_of_rewards,
     ax.spines[['bottom', 'top', 'right', 'left']].set_color('w')
     ax.grid(axis='y')
     ax.set_axisbelow(True)
-    ax.bar(labels, list_of_rewards, width=0.5, color=list_of_colors[:nb_models])
+    ax.bar(labels, list_of_rewards, width=0.5)
     if list_of_rewards_std is not None:
+        assert len(labels) == len(list_of_rewards_std), "Number of labels not matching the number of reward std"
         plt.errorbar(labels, list_of_rewards, yerr=list_of_rewards_std, fmt="o", color="tab:red", capsize=5.)
     ax.set_ylabel('reward')
-    ax.set_title('Walker reward ' + title)
+    ax.set_title('Reward ' + title)
     ax.tick_params(bottom=False, axis='x', labelrotation=90) # no ticks at the bottom, only the labels
-    if save_as_svg is not None:
-        plt.savefig("Figures/"+save_as_svg+"_reward.svg", bbox_inches='tight', format="svg", dpi=1200)
     plt.show()
 
 
@@ -255,14 +228,13 @@ def barplot_comparison(labels, list_of_survival, list_of_rewards,
     ax.spines[['bottom', 'top', 'right', 'left']].set_color('w')
     ax.grid(axis='y')
     ax.set_axisbelow(True)
-    ax.bar(labels, list_of_survival, width=0.5, color=list_of_colors[:nb_models])
+    ax.bar(labels, list_of_survival, width=0.5)
     if list_of_survival_std is not None:
+        assert len(labels) == len(list_of_survival_std), "Number of labels not matching the number of survival std"
         plt.errorbar(labels, list_of_survival, yerr=list_of_survival_std, fmt="o", color="tab:red", capsize=5.)
     ax.set_ylabel('survival')
-    ax.set_title('Walker survival ' + title)
+    ax.set_title('Survival ' + title)
     ax.tick_params(bottom=False, axis='x', labelrotation=90)
-    if save_as_svg is not None:
-        plt.savefig("Figures/"+save_as_svg+"_survival.svg", bbox_inches='tight', format="svg", dpi=1200)
     plt.show()
 
 

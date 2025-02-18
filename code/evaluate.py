@@ -12,7 +12,8 @@ import numpy as np
 
 
 from utils.loaders import make_env, load_proj
-from utils.utils import set_seed
+from utils.utils import set_seed, open_loop
+from utils.inverse_dynamics import InverseDynamics
 from DiT.ODE import ODE
 from DiT.planner import Planner
 
@@ -26,8 +27,7 @@ proj_name = None # name of the projector in [None, "Ref", "Adm", "SA", "A"]
 conditioning = None # attributes on which the diffusion model is conditioned in [None, "s0", "cmd", "s0_cmd"]
 
 extra_name = "" # string to add to the diffusion model to differentiate it from others 
-n_gradient_steps = 11 # 10_000
-batch_size = 64
+N_samples = 8 # number of sample trajectories to generate
 time_limit = None # stops the training after this many seconds
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -47,11 +47,34 @@ ode = ODE(env, modality=modality, device=device, **model_size, projector=proj)
 assert ode.load(extra=extra_name), f"Model {ode.filename+extra_name} cannot be loaded"
 planner = Planner(env, ode)
 
+#%% Load inverse dynamics model
+
+if "S" in modality: # no inverse dynamics for 'A' models since they directly generate admissible trajectories
+    ID = InverseDynamics(env)
+
+#%% Conditioning
+s0 = env.reset()
+if conditioning is None:
+    attr = None
+elif conditioning == "s0":
+    attr = s0.copy()
+elif "cmd" in conditioning:
+    # cmd = env.sample_command()
+    cmd = np.array([1., 0., 0.])
+    if conditioning == "s0_cmd":
+        attr = np.concatenate((s0, cmd))
+    else:
+        attr = cmd
+
 #%% Evaluation
 
-s0 = env.reset()
+out = planner.best_traj(s0, traj_len=H, attr=attr, proj=ode.projector)
+if modality == "S":
+    sampled_traj = out[0]
+    ID_traj, ID_actions, reward, survival = ID.closest_admissible_traj(sampled_traj)
+    env.traj_comparison(sampled_traj, "sampled", ID_traj, "ID", title=ode.filename)
 
-
-
-
+elif modality == "SA":
+    sampled_traj, actions = out
+    open_loop_traj = open_loop(env, s0, actions, attr=attr)
 
