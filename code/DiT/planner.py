@@ -11,8 +11,8 @@ The normalization is handled in the ODE
 
 import torch
 import numpy as np
-from ODE import ODE
-from utils import open_loop
+from DiT.ODE import ODE
+from utils.utils import open_loop
 
 class Planner():
     """

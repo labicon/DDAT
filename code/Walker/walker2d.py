@@ -12,12 +12,11 @@ Uses semi-implicit Euler integrator for step
 the x-position is included so that each velocity has its corresponding position
 """
 
-import torch
 import numpy as np
 import gymnasium as gym
 from gymnasium.envs.registration import EnvSpec
 
-from plots import plot_traj, traj_comparison
+from Walker.plots import plot_traj, traj_comparison
 
 class WalkerEnv():
     """

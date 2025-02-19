@@ -44,7 +44,7 @@ proj = load_proj(proj_name, env, device, modality)
 
 
 
-#%% Default DiT parameters
+#%% Load ODE without normalizing constants
 
 ode = ODE(env, modality=modality, attr_dim=attr_dim, device=device, **model_size,
           projector=proj)
@@ -58,9 +58,18 @@ if os.path.isfile(name):
 else:
     print("File " + name + " doesn't exist. Not loading anything.")
     
+#%% Save ODE with normalizing constants
+ode.train(x, attributes=attr, batch_size=batch_size, n_gradient_steps=0,
+          extra=extra_name)
 
-#%%
-ode.train(x, attributes=attr, batch_size=batch_size, n_gradient_steps=n_gradient_steps,
+#%% Change normalization to single normalizer for all states (old normalization)
+
+ode.normalizer.mean = x.mean()
+ode.normalizer.std = x.std()
+ode.save()
+
+#%% Verification: loss should be small
+ode.train(x, attributes=attr, batch_size=batch_size, n_gradient_steps=n_gradient_steps, 
           extra=extra_name, time_limit=time_limit)
 
 

@@ -15,7 +15,7 @@ from Quadcopter.quadcopter import QuadcopterEnv
 from GO1.GO1_env import Go1JoystickGymEnv
 from GO2.GO2_env import Go2JoystickGymEnv
 
-from projectors import Reference_Projector, Admissible_Projector, SA_Projector, Action_Projector
+from utils.projectors import Reference_Projector, Admissible_Projector, SA_Projector, Action_Projector
 
 
 #%% 
