@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <!-- Meta tags for social media banners, these should be filled in appropriatly as they are your "business card" -->
+  <!-- Replace the content tag with appropriate information -->
+  <meta name="description" content="POLICEd RL: Learning Closed-Loop Robot Control Policies with Provable Satisfaction of Hard Constraints">
+  <meta property="og:title" content="POLICEd RL"/>
+  <meta property="og:description" content="Learning Closed-Loop Robot Control Policies with Provable Satisfaction of Hard Constraints"/>
+  <meta property="og:url" content="https://iconlab.negarmehr.com/POLICEd-RL/"/>
+  <!-- Path to banner image, should be in the path listed below. Optimal dimenssions are 1200X630-->
+  <!-- <meta property="og:image" content="static/image/your_banner_image.png" />
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/> -->
+
+
+  <meta name="twitter:title" content="POLICEd RL">
+  <meta name="twitter:description" content="Learning Closed-Loop Robot Control Policies with Provable Satisfaction of Hard Constraints">
+  <!-- Path to banner image, should be in the path listed below. Optimal dimensions are 1200X600-->
+  <!-- <meta name="twitter:image" content="static/images/your_twitter_banner_image.png">
+  <meta name="twitter:card" content="summary_large_image"> -->
+  <!-- Keywords for your paper to be indexed by-->
+  <meta name="keywords" content="Controls & Dynamics, Controls, Dynamics, Robot Learning, Reinforcement Learning, Formal Methods, Formal Methods for Robotics, Robotics">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <title>POLICEd RL</title>
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+  rel="stylesheet">
+
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+  href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="https://documentcloud.adobe.com/view-sdk/main.js"></script>
+  <script defer src="static/js/fontawesome.all.min.js"></script>
+  <script src="static/js/bulma-carousel.min.js"></script>
+  <script src="static/js/bulma-slider.min.js"></script>
+  <script src="static/js/index.js"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({ tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]} });
+	  MathJax.Hub.Config({ TeX: { equationNumbers: {autoNumber: "AMS"} } });
+  </script>
+  <script type="text/javascript" async
+    src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML">
+  </script>
+
+  <style>
+	.reference {
+	   margin-bottom: 3mm;
+	}
+  </style>
+</head>
+<body>
+
+
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop">
+        <div class="columns is-centered">
+          <div class="column has-text-centered">
+            <h1 class="title is-1 publication-title">POLICEd RL: Learning Closed-Loop Robot Control Policies with Provable Satisfaction of Hard Constraints</h1>
+		<div class="is-size-5 publication-authors"> <!-- Paper authors -->
+              <span class="author-block">
+                <a href="https://jean-baptistebouvier.github.io/" target="_blank">Jean-Baptiste Bouvier</a>,</span>
+                <span class="author-block">
+                  <a href="https://kartik-nagpal.github.io/" target="_blank">Kartik Nagpal</a>,</span>
+                  <span class="author-block">
+                    <a href="https://negarmehr.com/" target="_blank">Negar Mehr</a>
+                  </span><br>
+		<a href="https://iconlab.negarmehr.com/" target="_blank">ICON Lab</a> at UC Berkeley <br>
+			Robotics: Science and Systems (RSS) 2024
+                  </div>
+
+                  <div class="column has-text-centered">
+                    <div class="publication-links">
+                         <!-- Arxiv PDF link -->
+                      <span class="link-block">
+                        <a href="https://arxiv.org/pdf/2403.13297.pdf" target="_blank"
+                        class="external-link button is-normal is-rounded is-dark">
+                        <span class="icon">
+                          <i class="fas fa-file-pdf"></i>
+                        </span>
+                        <span>Paper</span>
+                      </a>
+                    </span>
+
+                    <!-- Supplementary PDF link -->
+                    <!-- <span class="link-block">
+                      <a href="static/pdfs/supplementary_material.pdf" target="_blank"
+                      class="external-link button is-normal is-rounded is-dark">
+                      <span class="icon">
+                        <i class="fas fa-file-pdf"></i>
+                      </span>
+                      <span>Supplementary</span>
+                    </a>
+                  </span> -->
+
+                  <!-- Github link -->
+                  <span class="link-block">
+                    <a href="https://github.com/labicon/POLICEd-RL/tree/main/policed" target="_blank"
+                    class="external-link button is-normal is-rounded is-dark">
+                    <span class="icon">
+                      <i class="fab fa-github"></i>
+                    </span>
+                    <span>Code</span>
+                  </a>
+                </span>
+
+                <!-- ArXiv abstract Link -->
+                <span class="link-block">
+                  <a href="https://arxiv.org/abs/2403.13297" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+
+		<!-- Blog Link -->
+                <span class="link-block">
+                  <a href="https://jean-baptistebouvier.github.io/assets/blog_posts/policed_RL/" target="_blank"
+                  class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <!--i class="fas fa-rocket"></i-->
+		    <i class="fas fa-scroll"></i>
+                  </span>
+                  <span>Blog</span>
+                </a>
+              </span>
+            </div>
+	</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+ 
+            
+
+                 
+
+
+
+
+	
+<!-- Teaser video-->
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <video poster="" id="tree" autoplay controls muted loop width="1265" height="843">
+        <source src="static/videos/KUKA.mp4" type="video/mp4">
+      </video>
+      <h4 class="subtitle has-text-centered">
+        KUKA robotic arm tasked with reaching a <strong><span style="color:green;">green</span></strong> target while avoiding a <strong><span style="color:red;">red</span></strong> constraint area.<br>
+        Using only reward shaping or soft constraints like Constrained Policy Optimization (CPO) does not bring any safety guarantees. <br>
+	On the other hand, our <strong>POLICEd</strong> approach <em>guarantees</em> constraint satisfaction.
+      </h4>
+    </div>
+  </div>
+</section>
+<!-- End teaser video -->
+
+<!-- Paper abstract -->
+<section class="section hero is-light">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            In this paper, we seek to learn a robot policy guaranteed to satisfy state constraints.
+            To encourage constraint satisfaction, existing RL algorithms typically rely on Constrained Markov Decision Processes and discourage constraint violations through reward shaping.
+            However, such <em>soft constraints</em> cannot offer safety guarantees.
+            To address this gap, we propose <strong>POLICEd RL</strong>, a novel RL algorithm explicitly designed to enforce affine <em>hard constraints</em> in closed-loop with a black-box environment.
+            Our key insight is to make the learned policy be affine around the unsafe set and to use this affine region as a repulsive buffer to prevent trajectories from violating the constraint.
+            We prove that such policies exist and guarantee constraint satisfaction.
+            Our proposed framework is applicable to both systems with continuous and discrete state and action spaces and is agnostic to the choice of the RL training algorithm.
+            Our results demonstrate the capacity of POLICEd RL to enforce hard constraints in robotic tasks while significantly outperforming existing methods.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- End paper abstract -->
+
+
+
+
+
+	
+<section class="section hero is-small">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-justified">
+          <p>
+            Most safe RL works rely on reward shaping to discourage violations of a safety constraint.
+            However, such <em>soft constraints</em> do not guarantee safety.
+            Previous works trying to enforce <em>hard constraints</em> in RL typical suffer from two limitations:
+            either they need an accurate model of the environment, or their learned safety certificate only approximate without guarantees an actual safety certificate.
+          </p>
+          <p> 
+            On the other hand, our <strong>POLICEd RL</strong> approach can provably enforce hard constraint satisfaction in closed-loop with a black-box environment.
+            We build a repulsive buffer region in front of the constraint to prevent trajectories from approaching it.
+            Since trajectories cannot cross this buffer, they also cannot violate the constraint.
+          </p>
+	</div>	
+        <img src="static/images/schema.png" alt="POLICEd RL illustration" style="height:300px !important; display:block !important; margin:auto !important;"/>
+	<div class="content has-text-justified">
+          <p>
+            Schematic illustration of POLICEd RL. To prevent state $s$ from violating an affine constraint represented by $Cs \leq d$,
+            our POLICEd policy (arrows in the environment) enforces $C\dot s \leq 0$ in buffer region $\mathcal{B}$ (<strong><span style="color:LightSeaGreen;">blue</span></strong>) directly below
+            the unsafe area (<strong><span style="color:PaleVioletRed;">red</span></strong>).
+            We use the <a href="#POLICE">POLICE</a> algorithm to make our policy affine inside buffer region $\mathcal{B}$,
+            which allows us to easily verify whether trajectories can violate the constraint.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+
+
+
+  
+<!-- Image carousel -->
+<section class="hero is-light">
+  <div class="hero-body">
+    <div class="container">
+      <div id="results-carousel" class="carousel results-carousel">
+       <div class="item">
+        <img src="static/images/KUKA-No-Buffer-1.png" alt="KUKA robotic arm" style="height:400px !important; display:block !important; margin:auto !important;"/>
+        <h4 class="subtitle has-text-centered">
+          KUKA robotic arm reaching for <strong><span style="color:green;">green</span></strong> target <br>
+	  while avoiding <strong><span style="color:red;">red</span></strong> constraint area.
+        </h4>
+      </div>
+      <div class="item">
+        <img src="static/images/KUKA-No-Buffer-2.png" alt="KUKA robotic arm" style="height:400px !important; display:block !important; margin:auto !important;"/>
+        <h4 class="subtitle has-text-centered">
+          KUKA robotic arm reaching for <strong><span style="color:green;">green</span></strong> target <br>
+	  while avoiding <strong><span style="color:red;">red</span></strong> constraint area.
+        </h4>
+      </div>
+      <div class="item">
+        <img src="static/images/KUKA-No-Buffer-3.png" alt="KUKA robotic arm" style="height:400px !important; display:block !important; margin:auto !important;"/>
+        <h4 class="subtitle has-text-centered">
+          KUKA robotic arm reaching for <strong><span style="color:green;">green</span></strong> target <br>
+	  while avoiding <strong><span style="color:red;">red</span></strong> constraint area.
+        </h4>
+     </div>
+     <div class="item">
+      <img src="static/images/KUKA-POLICEd-1.png" alt="KUKA robotic arm" style="height:400px !important; display:block !important; margin:auto !important;"/>
+      <h4 class="subtitle has-text-centered">
+          KUKA robotic arm reaching for <strong><span style="color:green;">green</span></strong> target. <br>
+          The POLICEd policy creates a <strong><span style="color:cyan;">cyan</span></strong> repulsive buffer <br>
+	  to avoid the <strong><span style="color:red;">red</span></strong> constraint area.
+      </h4>
+    </div>
+    <div class="item">
+      <img src="static/images/KUKA-POLICEd-2.png" alt="KUKA robotic arm" style="height:400px !important; display:block !important; margin:auto !important;"/>
+       <h4 class="subtitle has-text-centered">
+          KUKA robotic arm reaching for <strong><span style="color:green;">green</span></strong> target. <br>
+          The POLICEd policy creates a <strong><span style="color:cyan;">cyan</span></strong> repulsive buffer <br>
+	  to avoid the <strong><span style="color:red;">red</span></strong> constraint area.
+      </h4>
+    </div>
+    <div class="item">
+      <img src="static/images/KUKA-POLICEd-3.png" alt="KUKA robotic arm" style="height:400px !important; display:block !important; margin:auto !important;"/>
+      <h4 class="subtitle has-text-centered">
+          KUKA robotic arm reaching for <strong><span style="color:green;">green</span></strong> target. <br>
+          The POLICEd policy creates a <strong><span style="color:cyan;">cyan</span></strong> repulsive buffer <br>
+	  to avoid the <strong><span style="color:red;">red</span></strong> constraint area.
+      </h4>
+    </div>
+  </div>
+</div>
+</div>
+</section>
+<!-- End image carousel -->
+
+<section class="section hero is-small">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+	<div class="content has-text-justified">
+            <p>
+              We implement POLICEd RL on the KUKA arm and train it to reach a target while avoiding a constraint area, as illustrated above.
+	      We use the classic RL algorithm Twin Delayed DDPG <a href="#TD3">(TD3)</a> with POLICEd layers.
+	      We compare this POLICEd implementation against a TD3 baseline, a Constrained Policy Optimization <a href="#CPO">(CPO)</a> soft-constraint algorithm,
+	      and a learned <a href="#yang2023model">PPO-Barrier</a> safety certificate.
+            </p>
+        </div>
+          <img src="static/images/comparison.png" alt="" height="400px"/>
+          <div class="content has-text-justified">
+            <p>
+              Metrics comparison for different methods based on a 500 episode deployment with the fully-trained policies on the safe arm task.
+              The completion task only assess whether the target is eventually reached, even if the constraint is not respected.
+	      The most significant metric is the average percentage of constraint satisfaction, which shows that only POLICEd RL guarantees constraint satisfaction. 
+              For all metrics higher is better (&uarr;). 
+            </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- Presentation video-->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+        <h2 class="title is-3">Video Presentation given at RSS 2024</h2>
+          <div class="publication-video">
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/xMWSqjRrcVc?si=Puj4cTJtLFcLGyH1" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"   referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+	
+<!-- Youtube video -->
+<!-- <section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <!- - Paper video. - ->
+      <h2 class="title is-3">Video Presentation</h2>
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          
+          <div class="publication-video">
+            <!- - Youtube embed code here - ->
+            <iframe src="https://www.youtube.com/embed/JkaxUblCGz0" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+<!-- End youtube video -->
+
+
+<!-- Video carousel -->
+<!-- <section class="hero is-small">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title is-3">Another Carousel</h2>
+      <div id="results-carousel" class="carousel results-carousel">
+        <div class="item item-video1">
+          <video poster="" id="video1" autoplay controls muted loop height="100%">
+            <!- - Your video file here - ->
+            <source src="static/videos/carousel1.mp4"
+            type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-video2">
+          <video poster="" id="video2" autoplay controls muted loop height="100%">
+            <!- - Your video file here - ->
+            <source src="static/videos/carousel2.mp4"
+            type="video/mp4">
+          </video>
+        </div>
+        <div class="item item-video3">
+          <video poster="" id="video3" autoplay controls muted loop height="100%">\
+            <!- - Your video file here - ->
+            <source src="static/videos/carousel3.mp4"
+            type="video/mp4">
+          </video>
+        </div>
+      </div>
+    </div>
+  </div>
+</section> -->
+<!-- End video carousel -->
+
+
+
+
+
+
+<!-- Paper poster -->
+<section class="hero is-small is-light">
+  <div class="hero-body">
+    <div class="container">
+      <h2 class="title">Poster</h2>
+      <iframe  src="static/pdfs/RSS poster.pdf" width="100%" height="1100"></iframe>
+      </div>
+    </div>
+  </section>
+<!--End paper poster -->
+
+
+<!--BibTex citation -->
+  <section class="section" id="BibTeX">
+    <div class="container is-max-desktop content">
+      <h2 class="title">BibTeX</h2>
+      <pre><code>@inproceedings{bouvier2024policed,
+        title = {\href{https://arxiv.org/pdf/2403.13297}{POLICEd RL: Learning Closed-Loop Robot Control Policies with Provable Satisfaction of Hard Constraints}},
+        author = {Bouvier, Jean-Baptiste and Nagpal, Kartik and Mehr, Negar},
+        booktitle = {Robotics: Science and Systems (RSS)},
+        year = {2024}
+      }</code></pre>
+    </div>
+</section>
+<!--End BibTex citation -->
+
+<!--References -->
+<section class="section hero is-small">
+  <div class="container is-max-desktop content">
+    <h2 class="title">References</h2>
+    <dl>
+      <dt><strong>[CPO]</strong></dt>
+	<dd>
+	  <div class="reference" id="CPO">
+	    Joshua Achiam, David Held, Aviv Tamar, and Pieter Abbeel,
+	    <a href="https://proceedings.mlr.press/v70/achiam17a" target="_blank" rel="noopener noreferrer">Constrained Policy Optimization</a>,
+	    34th International Conference on Machine Learning (ICML), 2017.
+	  </div>
+	</dd>
+	<dt><strong>[POLICE]</strong></dt>
+	<dd>
+	  <div class="reference" id="POLICE">
+	    Randall Balestriero and Yann LeCun,
+	    <a href="https://ieeexplore.ieee.org/abstract/document/10096520" target="_blank" rel="noopener noreferrer"> POLICE: Provably optimal linear constraint enforcement for deep neural networks</a>,
+	    IEEE International Conference on Acoustics, Speech and Signal Processing, 2023.
+	  </div>
+	</dd>
+	<dt><strong>[TD3]</strong></dt>
+	<dd>
+	  <div class="reference" id="TD3">
+	    Scott Fujimoto, Herke Hoof, and David Meger,
+	    <a href="https://proceedings.mlr.press/v80/fujimoto18a.html" target="_blank" rel="noopener noreferrer">Addressing function approximation error in actor-critic methods</a>,
+	    International Conference on Machine Learning (ICML), 2018.
+	  </div>
+	</dd>
+	<dt><strong>[PPO-Barrier]</strong></dt>
+	<dd>
+	  <div class="reference" id="yang2023model">
+	    Yujie Yang, Yuxuan Jiang, Yichen Liu, Jianyu Chen, and Shengbo Eben Li,
+	    <a href="https://ieeexplore.ieee.org/document/10023989" target="_blank" rel="noopener noreferrer">Model-free safe reinforcement learning through neural barrier certificate</a>,
+	    IEEE Robotics and Automation Letters, 2023.
+	  </div>
+	</dd>
+    </dl>  
+  </div>
+</section>
+
+	
+	
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content">
+          <p>
+            This work is supported by the National Science Foundation, under grants ECCS-2145134, CAREER Award, CNS-2423130, and CCF-2423131. 
+          </p>
+          <p>
+            This page was built using the <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a> which was adopted from the <a href="https://nerfies.github.io" target="_blank">Nerfies</a> project page.
+            <br> This website is licensed under a <a rel="license"  href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative
+            Commons Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
