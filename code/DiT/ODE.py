@@ -15,8 +15,8 @@ import numpy as np
 from tqdm import tqdm
 from copy import deepcopy
 
-from DiT import DiT1d, count_parameters
-from utils import Normalizer
+from DiT.DiT import DiT1d, count_parameters
+from utils.utils import Normalizer
 
 
 
@@ -306,11 +306,11 @@ class ODE():
         if self.is_conditional:
             to_save['attr_normalizer_mean'] = self.attr_normalizer.mean
             to_save['attr_normalizer_std'] = self.attr_normalizer.std
-        torch.save(to_save, "trained_models/"+ self.filename+extra+".pt")
+        torch.save(to_save, self.task+"/trained_models/"+ self.filename+extra+".pt")
         
     
     def load(self, extra:str = ""):    
-        name = "trained_models/" + self.filename + extra + ".pt"
+        name = self.task+"/trained_models/" + self.filename + extra + ".pt"
         if os.path.isfile(name):
             print("Loading " + name)
             checkpoint = torch.load(name, map_location=self.device, weights_only=True)
