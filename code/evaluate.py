@@ -36,8 +36,8 @@ set_seed(0)
 
 #%%
 
-env, model_size, H, N_trajs = make_env(env_name)
-proj = load_proj(env_name)
+env, model_size, H, N_trajs = make_env(env_name, modality)
+proj = load_proj(proj_name, env, device, modality)
 print("Device:", device)
 
 
@@ -68,7 +68,7 @@ elif "cmd" in conditioning:
 
 #%% Evaluation
 
-out = planner.best_traj(s0, traj_len=H, attr=attr, proj=ode.projector)
+out = planner.best_traj(s0, traj_len=H, attr=attr, projector=ode.projector, n_samples_per_s0=N_samples)
 if modality == "S":
     sampled_traj = out[0]
     ID_traj, ID_actions, reward, survival = ID.closest_admissible_traj(sampled_traj)
@@ -76,5 +76,7 @@ if modality == "S":
 
 elif modality == "SA":
     sampled_traj, actions = out
-    open_loop_traj = open_loop(env, s0, actions, attr=attr)
+    reward, survival, open_loop_traj = open_loop(env, s0, actions[0], attr=attr)
+    print(f"{env_name} gets reward of {reward:.2f} and survives {survival*100:.0f}%")
+    env.plot_traj(open_loop_traj)
 

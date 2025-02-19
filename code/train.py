@@ -37,15 +37,19 @@ H = 300 # horizon, length of each trajectory in the dataset
 #%% Default environment parameters
 
 print("Device:", device)
-env, model_size, H, N_trajs = make_env(env_name)
+env, model_size, H, N_trajs = make_env(env_name, modality)
 x, attr, attr_dim = load_datasets(env_name, modality, conditioning, N_trajs, H, device)
-proj = load_proj(proj_name, env, device, modality)
+proj = load_proj(proj_name, env, device, modality, dataset=x)
 
 
 #%% Default DiT parameters
 
 ode = ODE(env, modality=modality, attr_dim=attr_dim, device=device, **model_size,
-          projector=proj)
+          projector=None)
+
+if proj_name is not None: # start training from the base model
+    assert ode.load(extra=extra_name), "Train without projections first"
+    ode.update_projector(proj)
 
 ode.train(x, attributes=attr, batch_size=batch_size, n_gradient_steps=n_gradient_steps,
           extra=extra_name, time_limit=time_limit)

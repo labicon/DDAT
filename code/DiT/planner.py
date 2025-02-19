@@ -31,8 +31,8 @@ class Planner():
         self.is_conditional = ode.is_conditional
         
         self.device = ode.device
-        self.low_bound = torch.FloatTensor(env.low_bound) # lower bound on the state
-        self.high_bound = torch.FloatTensor(env.high_bound) # upper bound on the state
+        self.low_bound = torch.FloatTensor(env.low_bound).to(self.device) # lower bound on the state
+        self.high_bound = torch.FloatTensor(env.high_bound).to(self.device) # upper bound on the state
         self.state_size = env.state_size
         self.action_size = env.action_size
         self.attr_dim = ode.attr_dim
@@ -110,7 +110,7 @@ class Planner():
             largest_survival = 0 # Keep trajectory surviving the longest
             for sample_id in range(n_samples_per_s0):
                 i = s_id*n_samples_per_s0 + sample_id
-                traj = SA_pred[i, :self.state_size].clone()
+                traj = SA_pred[i, :, :self.state_size].clone()
                 for t in range(traj_len):
                     if (traj[t] < self.low_bound).any() or (traj[t] > self.high_bound).any():
                             break
@@ -193,15 +193,14 @@ class Planner():
         if self.is_conditional:
             assert attr is not None, f"Sampling {self.ode.filename} requires conditioning attributes"
             attr = self._check_attr(s0, attr)
+            attr = attr.repeat_interleave(n_samples_per_s0, dim=0)
         
-        
-        ### Repeat (s0, attr) as required
-        attr = attr.repeat_interleave(n_samples_per_s0, dim=0)
         S0 = s0.repeat_interleave(n_samples_per_s0, dim=0)
         n_samples = S0.shape[0] # total number of samples = N_s0 * n_samples_per_s0
         
         ### Prediction by the Diffusion model
-        pred = self.ode.sample(s0=s0, attr=attr, traj_len=traj_len, n_samples=n_samples, N=N, proj=projector)
+        pred = self.ode.sample(s0=s0, attr=attr, traj_len=traj_len, n_samples=n_samples,
+                                N=N, projector=projector)
         if self.modality == "S":
             return self._best_S_traj(s0, pred, N_s0, n_samples_per_s0, traj_len)
         elif self.modality == "SA":

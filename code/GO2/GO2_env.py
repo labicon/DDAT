@@ -14,7 +14,7 @@ from gymnasium import utils
 from gymnasium.spaces import Box
 from gymnasium.envs.mujoco import MujocoEnv
 
-from plots import plot_traj, traj_comparison
+from GO2.plots import plot_traj, traj_comparison
 
 DEFAULT_CAMERA_CONFIG = {"distance": 6.0}
 menagerie_path = './Unitree_go2'
@@ -173,8 +173,7 @@ class Go2Env(MujocoEnv, utils.EzPickle):
         self.action_max =  1 * np.ones(self.action_size)
         self.position_states = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
         self.velocity_states = list(range(19, 37))
-        self.actuated_states = self.velocity_states
-
+        
 
     def sample_command(self, command:np.ndarray = None):
         lin_vel_x = [-0.6, 1.5]  # min max [m/s]

@@ -12,6 +12,7 @@ Uses semi-implicit Euler integrator for step
 the x-position is included so that each velocity has its corresponding position
 """
 
+import torch
 import numpy as np
 import gymnasium as gym
 from gymnasium.envs.registration import EnvSpec
@@ -92,8 +93,6 @@ class HopperEnv():
         self.state_range = self.env._healthy_state_range # (-100, 100), reset at 0
         self.dt = self.env.dt # 0.008s # time step
         
-        self.actuated_states = [6, 7, 8, 9, 10, 11] # states that are directly actuated
-        self.unactuated_states = [0, 1, 2, 3, 4, 5] # states that are not directly actuated
         self.velocity_states = [6, 7, 8, 9, 10, 11] 
         self.position_states = [0, 1, 2, 3, 4, 5] 
         self.state_labels = ["x", "z", "top", "thigh", "leg", "foot", "x", "z", "top", "thigh", "leg", "foot"]

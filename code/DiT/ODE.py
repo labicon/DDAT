@@ -56,9 +56,9 @@ class ODE():
         else:
             self.projector_name = projector.name
         self.task = env.name
-        self.projector = None
         self.specs = f"{d_model}_{n_heads}_{depth}"
         self.is_conditional = attr_dim is not None
+        self.attr_dim = attr_dim
         assert modality in ["S", "SA", "A"], 'model must predict either states "S", states and actions "SA", or only actions "A" '
         self.modality = modality
         self.filename = f"{modality}_{self.is_conditional*'Cond_'}ODE_{self.task}_{self.projector_name}_specs_{self.specs}"
@@ -132,7 +132,6 @@ class ODE():
         pred = self.D(x + eps, sigma, condition, mask)            
         
         if self.projector is not None:
-            self.nb_exact_proj += (sigma < self.projector.sigma_min).sum().item()
             pred_s = self.normalizer.unnormalize(pred[:, :, :self.state_size]) # predicted states    
             ref_s = self.normalizer.unnormalize(x[:, :, :self.state_size]) # true states
             
@@ -142,11 +141,16 @@ class ODE():
             else:
                 pred_a, ref_a = None, None
             
-            if "reference" in self.projector.name:
+            if self.projector.reference:
                 s, a = self.projector.project_traj(Trajs=pred_s, Ref_Trajs=ref_s, sigma=sigma, Actions=ref_a) 
             else:
                 s, a = self.projector.project_traj(Trajs=pred_s, sigma=sigma, Actions=pred_a)
-            pred = torch.cat((self.normalizer.normalize(s), a), dim=2)
+            
+            s = self.normalizer.normalize(s)
+            if self.modality == "SA":
+                pred = torch.cat((x, a), dim=2)
+            else: # "S"
+                pred = s
         
         loss = (loss_mask * self.loss_weighting(sigma) * (pred - x)**2).mean()
         self.optim.zero_grad()
@@ -281,16 +285,21 @@ class ODE():
             if projector is not None: # project the rest of the trajectory onto its admissible space
                 sigma = self.sigma_s[i]*torch.ones((x.shape[0],1), device=self.device)
                 s = self.normalizer.unnormalize(x[:, :, :self.state_size]) # sampled states
+                
                 if self.modality == "SA":
                     a = x[:, :, self.state_size:] # sampled actions
                 else: # "S"
                     a = None
-                if "reference" in projector.name:
+
+                if projector.reference:
                     # use the sampled traj as reference after training to minimize deviations from projections
                     s, a = projector.project_traj(Trajs=s, Ref_Trajs=s, sigma=sigma, Actions=a)
                 else:
                     s, a = projector.project_traj(Trajs=s, sigma=sigma, Actions=a)
-                x = torch.cat((self.normalizer.normalize(s), a), dim=2)
+                
+                x = self.normalizer.normalize(s)
+                if self.modality == "SA":
+                    x = torch.cat((x, a), dim=2)
         
         if "S" in self.modality:
             x[:, :, :self.state_size] = self.normalizer.unnormalize(x[:, :, :self.state_size])
@@ -299,7 +308,8 @@ class ODE():
     
     def save(self, extra:str = ""):
         to_save = {'model': self.F.state_dict(),
-                    'model_ema': self.F_ema.state_dict()}
+                   'model_ema': self.F_ema.state_dict(),
+                   'sigma_data': self.sigma_data}
         if "S" in self.modality:
              to_save['normalizer_mean'] = self.normalizer.mean
              to_save['normalizer_std'] = self.normalizer.std
@@ -316,6 +326,7 @@ class ODE():
             checkpoint = torch.load(name, map_location=self.device, weights_only=True)
             self.F.load_state_dict(checkpoint['model'])
             self.F_ema.load_state_dict(checkpoint['model_ema'])
+            self.sigma_data = checkpoint['sigma_data']
             if "S" in self.modality:
                 self.normalizer = Normalizer(checkpoint['normalizer_mean'])
                 self.normalizer.std = checkpoint['normalizer_std']

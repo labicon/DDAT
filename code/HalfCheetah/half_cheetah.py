@@ -12,13 +12,11 @@ Uses semi-implicit Euler integrator for step
 the x-position is included so that each velocity has its corresponding position
 """
 
-import torch
 import numpy as np
 import gymnasium as gym
-import matplotlib.pyplot as plt
 from gymnasium.envs.registration import EnvSpec
 
-from plots import plot_traj, traj_comparison
+from HalfCheetah.plots import plot_traj, traj_comparison
 
 class CheetahEnv():
     """
@@ -77,8 +75,8 @@ class CheetahEnv():
                        vector_entry_point=None)     # The location of the vectorized environment to create from
          
         self.env = gym.make(self.spec, exclude_current_positions_from_observation=False) # add x-position
-        assert self.env.model.opt.integrator == 0, "Select 'Euler' for the integrator in the XML file at '<<NAME_OF_YOUR_CONDA_ENVIRONMENT>>/Lib/site-packages/gymnasium/envs/mujoco/assets' "
-        assert self.env.frame_skip == 1, "Need frame_skip = 1, i.e., single time step between states. Change in half_cheetah_v4.py line __ and time step 0.01 in XML next to integrator"
+        assert self.env.model.opt.integrator == 0, "Select 'Euler' for the integrator in the <option> line 43 of XML file at '<<NAME_OF_YOUR_CONDA_ENVIRONMENT>>/Lib/site-packages/gymnasium/envs/mujoco/assets' "
+        assert self.env.frame_skip == 1, "Need frame_skip = 1, i.e., single time step between states. Change in half_cheetah_v4.py line 185 and time step 0.01 in XML next to integrator and replace fps line 143 by 100 instead of 20,"
         self.metadata = self.env.metadata
         
         self._seed = 0
@@ -93,9 +91,7 @@ class CheetahEnv():
         self.dt = self.env.dt # 0.01s # time step
         
         self.position_states = [0, 1, 2, 3, 4, 5, 6, 7, 8]
-        self.unactuated_states = self.position_states # states that are not directly actuated
         self.velocity_states = [9, 10, 11, 12, 13, 14, 15, 16, 17] 
-        self.actuated_states = self.velocity_states # states that are directly actuated
         self.state_labels = ["x", "z", "front tip", "back thigh", "back shin", "back foot", "front thigh", "front shin", "front foot", "v_x", "v_z", "angle vel front tip", "angle vel back thigh", "angle vel back shin", "angle vel back foot", "angle vel front thigh", "angle vel front shin", "angle vel front foot"]
         self.action_labels = ["Torque back thigh", "Torque back shin", "Torque back foot", "Torque front thigh", "Torque front shin", "Torque front foot"]
         

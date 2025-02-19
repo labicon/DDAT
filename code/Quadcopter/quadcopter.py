@@ -11,7 +11,7 @@ https://github.com/johnviljoen/231A_project
 import torch
 import numpy as np
 
-from plots import plot_traj, traj_comparison
+from Quadcopter.plots import plot_traj, traj_comparison
 
 class QuadcopterEnv():
     """
@@ -65,7 +65,7 @@ class QuadcopterEnv():
     
     
     def __init__(self, reset_noise_scale:float = 1e-2, dt: float = 0.01,
-                 cylinder_radii = [0.9, 0.9]):
+                 cylinder_radii = [0.7, 0.7]):
         
         self.name = "Quadcopter"
         self.state_size = 17
@@ -74,7 +74,6 @@ class QuadcopterEnv():
         self.action_max = np.array([[ 1.,  1.,  1.,  1.]])
         self.position_states = [0,1,2,3,4,5,6]
         self.velocity_states = [7,8,9,10,11,12,13,14,15,16]
-        self.actuated_states = [7,8,9,10,11,12,13,14,15,16]
         
         ### Obstacles: cylinders along the z-axis
         self.target_position = np.array([7., 0., 0.])

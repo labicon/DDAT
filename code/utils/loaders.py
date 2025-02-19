@@ -12,15 +12,15 @@ from Walker.walker2d import WalkerEnv
 from Hopper.hopper import HopperEnv
 from HalfCheetah.half_cheetah import CheetahEnv
 from Quadcopter.quadcopter import QuadcopterEnv
-from GO1.GO1_env import Go1JoystickGymEnv
-from GO2.GO2_env import Go2JoystickGymEnv
+from GO1.GO1_env import Go1Env
+from GO2.GO2_env import Go2Env
 
 from utils.projectors import Reference_Projector, Admissible_Projector, SA_Projector, Action_Projector
 
 
 #%% 
 
-def make_env(env_name: str):
+def make_env(env_name: str, modality: str):
     """
     Creates the given environment
 
@@ -28,7 +28,8 @@ def make_env(env_name: str):
     ----------
     env_name : Name of the desired environment to create
         Should be one of "Hopper", "Walker", "HalfCheetah", "Quadcopter", "GO1", "GO2"
-
+    modality : prediction modality of the diffusion in ["S", "SA", "A"]
+        
     Returns
     -------
     env : Gym-like environment
@@ -50,23 +51,31 @@ def make_env(env_name: str):
         
     elif env_name == "HalfCheetah":
         env = CheetahEnv()
-        model_size = {"d_model": 256, "n_heads": 4, "depth": 3}
+        model_size = {"d_model": 256, "n_heads": 4, "depth": 4}
         H = 200
+        if modality == "A": # less depth to compensate for the extra parameters of the conditioning
+            model_size = {"d_model": 256, "n_heads": 4, "depth": 3}
         
     elif env_name == "Quadcopter":
         env = QuadcopterEnv()
-        model_size = {"d_model": 128, "n_heads": 4, "depth": 3}
+        model_size = {"d_model": 256, "n_heads": 4, "depth": 4}
         H = 200
+        if modality == "A": # less depth to compensate for the extra parameters of the conditioning
+            model_size = {"d_model": 256, "n_heads": 4, "depth": 3}
         
     elif env_name == "GO1":
-        env = Go1JoystickGymEnv()
+        env = Go1Env()
         model_size = {"d_model": 256, "n_heads": 4, "depth": 6}
         H = 500
+        if modality == "A": # less depth to compensate for the extra parameters of the conditioning
+            model_size = {"d_model": 256, "n_heads": 4, "depth": 5}
         
     elif env_name == "GO2":
-        env = Go2JoystickGymEnv()
+        env = Go2Env()
         model_size = {"d_model": 256, "n_heads": 4, "depth": 6}
         H = 500
+        if modality == "A": # less depth to compensate for the extra parameters of the conditioning
+            model_size = {"d_model": 256, "n_heads": 4, "depth": 5}
 
     N_trajs = 1000
 
@@ -103,11 +112,11 @@ def load_datasets(env_name:str, modality:str, conditioning:str,
     assert conditioning in [None, "s0", "cmd", "s0_cmd"], "Conditioning not recognized"
     
     # Training dataset
-    dataset = np.load(f"datasets/{env_name}_{N_trajs}trajs_{H}steps.npz")
+    dataset = np.load(f"{env_name}/datasets/{env_name}_{N_trajs}trajs_{H}steps.npz")
     if modality == "S":
         x = dataset['Trajs'][:, :H] # cut the length of trajectories to H
     elif modality == "SA":
-        x = np.concatenate((dataset['Trajs'][:, :H], dataset['Actions'][:, :H]), dim=2)
+        x = np.concatenate((dataset['Trajs'][:, :H], dataset['Actions'][:, :H]), axis=2)
     else: # modality == "A"
         x = dataset['Actions'][:, :H]
     x = torch.FloatTensor(x).to(device)
@@ -178,6 +187,6 @@ def load_proj(proj_name:str, env, device:str, modality:str, dataset=None,
     
     elif proj_name == "A":
         assert modality == "SA", "The action projector requires SA modality"
-        proj = Action_Projector(env, sigma_min=0.0021, sigma_max=0.2)
+        proj = Action_Projector(env, sigma_min=0.0021, sigma_max=0.2, device=device)
         
     return proj

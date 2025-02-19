@@ -16,8 +16,10 @@ import numpy as np
 import cvxpy as cp
 from time import time
 from tqdm import tqdm
-from utils import vertices, norm
+from utils.utils import vertices, norm
 
+import warnings
+warnings.simplefilter("ignore", UserWarning)
 
 
 #%% Inverse Dynamics model
@@ -37,20 +39,17 @@ class InverseDynamics():
         self.name = "InverseDynamics"
         self.time_limit = time_limit # [seconds] to prevent infinite loop in black-box optimization
         self.env = env
-        self.task = env.name
         self.action_min = env.action_min
         self.action_max = env.action_max
         self.state_size = env.state_size
         self.action_size = env.action_size
         self.extremal_actions = vertices(self.action_min, self.action_max).squeeze()
-        # self.pos = env.position_states
-        # self.vel = env.velocity_states
-        # self.actu = env.actuated_states
+        self.vel = env.velocity_states
         self.dt = env.dt
         self.tol = tol # tolerance
      
         m = self.extremal_actions.shape[0]
-        n = len(self.actu)
+        n = len(self.vel)
         
         ### Define convex optimization problem in cvxpy
         self.x = cp.Variable(m) # m coefficients, 1 for each vertex to describe point in convexhull
@@ -116,7 +115,7 @@ class InverseDynamics():
         while i < max_iter and norm(pred_s1 - s1) > self.tol:
             actions = (a + self.extremal_actions*shrink_rate**i).clip(self.action_min, self.action_max)
             S1 = self._reachable_set(s0, actions)
-            coefs = self._convex_coefficients(S1[:, self.actu], s1[self.actu])
+            coefs = self._convex_coefficients(S1[:, self.vel], s1[self.vel])
             a = actions.T @ coefs
             a = a.clip(self.action_min, self.action_max).squeeze()
             self.env.reset_to(s0)
@@ -194,10 +193,13 @@ class InverseDynamics():
         self.warmstart = np.zeros(len(self.vel))
         
         reward = 0
-        for i in tqdm(range(H-1)):           
+        pbar = tqdm(range(H-1))
+        pbar.set_description(f'{self.env.name} Inverse Dynamics')
+        for i in range(H-1):            
             Actions[i], Admissible_traj[i+1], r, done = self.action(Admissible_traj[i], traj[i+1], pred_actions[i])
             state_norm_dif += norm(Admissible_traj[i+1] - traj[i+1])
             reward += r
+            pbar.update(1)
             if done: 
                 state_norm_dif = np.inf
                 break

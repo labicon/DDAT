@@ -46,7 +46,9 @@ class Normalizer():
     def __init__(self, x: torch.Tensor):
         """Normalizing states for the Diffusion, same mean std for all timesteps
         But different mean for each state"""
-        if len(x.shape) == 2: # single trajectory
+        if len(x.shape) == 1: # saved mean
+            self.mean, self.std = x, 0.
+        elif len(x.shape) == 2: # single trajectory
             self.mean, self.std = x.mean(dim=0), x.std(dim=0)
         elif len(x.shape) == 3: # dataset of trajectories
             self.mean, self.std = x.mean(dim=(0,1)), x.std(dim=(0,1))
@@ -116,7 +118,10 @@ def open_loop(env, s0: np.array, actions: torch.Tensor, attr: torch.Tensor = Non
         actions = actions.cpu().numpy()
     if type(s0) == torch.Tensor:
         s0 = s0.cpu().numpy()
-        
+    assert len(actions.shape) == 2, f"actions must be a 2D array and not {actions.shape}"
+    assert actions.shape[1] == env.action_size, f"actions have the wrong size {actions.shape[1]} instead of {env.action_size}"
+    assert s0.shape == (env.state_size,), f"initial state s0 has the wrong size {s0.shape} instead of ({env.state_size},)"
+     
     H, _ = actions.shape
     total_reward = 0.
     env.reset_to(s0)

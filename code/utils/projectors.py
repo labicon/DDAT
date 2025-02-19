@@ -4,15 +4,17 @@ Created on Mon Sep 16 08:24:10 2024
 
 @author: Jean-Baptiste Bouvier
 
-Projectors parent class for the State-Action models
-Predict Trajectories and Actions for the Unitree GO2
-
+Trajectory projectors to make state trajectories admissible
 """
 
+import os
 import torch
 import cvxpy as cp
 import numpy as np
-from utils import norm, vertices
+import torch.nn as nn
+from tqdm import tqdm
+import matplotlib.pyplot as plt
+from utils.utils import norm, vertices
 from cvxpylayers.torch import CvxpyLayer
 
 
@@ -21,53 +23,48 @@ from cvxpylayers.torch import CvxpyLayer
 #%% Parent Projector
 
 class Projector():
-    def __init__(self, env, sigma_min=0.0021, sigma_max=0.2, reference=False,
-                 device="cpu"):
-        """Parent class for all projectors.
-        sigma > sigma_max: no projections
-        sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
-        sigma < sigma_min: 100% projection
-        reference: whether the projector uses a reference trajectory when projecting a trajectory
+    """
+    
+    """
+    def __init__(self, env, sigma_min:float = 0.0021, sigma_max:float = 0.2,
+                 reference:bool = False, device:str = "cpu"):
+        """Parent class for all projectors with projection curriculum.
+        Arguments:
+            - env : Gym-like environment
+            - sigma_min : noise value under which all state transitions are projected
+            - sigma_max : noise value over which none of the the state transitions are projected
+            - reference : whether the projector uses a reference trajectory
+            - device : "cpu" or "cuda"
         
-        Optimized projection by defining the cvxpy problem once at initialization and solving it with different parameters.
+        When sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
         """
-
-        assert reference == False, "Reference Projector not implemented for Unitree GO2"
-        
         
         self.env = env
-        
         assert sigma_min >= 0., "Projections happen for sigma <= sigma_min which must be non-negative"
         self.sigma_min = sigma_min
-        assert sigma_max >= sigma_min
+        assert sigma_max >= sigma_min, "For the projection curriculum, sigma_min <= sigma_max"
         self.sigma_max = sigma_max
-        self.states_projected = "vel"
-        if reference:
-            print("\nThe state used as reference for the halfcheetah is 2, i.e, the front tip angle\n")
         self.reference = reference
-        
         self.device = device
         self.state_size = self.env.state_size
         self.action_size = self.env.action_size
-        self.a_min = torch.FloatTensor(self.env.action_min)
-        self.a_max = torch.FloatTensor(self.env.action_max)
+        self.a_min = torch.FloatTensor(self.env.action_min).to(self.device)
+        self.a_max = torch.FloatTensor(self.env.action_max).to(self.device)
         if len(self.a_max.shape) == 1:
             self.a_max = self.a_max.reshape((1, self.action_size))
             self.a_min = self.a_min.reshape((1, self.action_size))
-        self.extremal_actions = vertices(self.a_min, self.a_max).reshape((2**self.action_size, self.action_size))
+        self.extremal_actions = vertices(self.a_min, self.a_max).reshape((2**self.action_size, self.action_size)).to(self.device)
         self.nb_actions = self.extremal_actions.shape[0]
         
         self.pos = self.env.position_states
         self.vel = self.env.velocity_states
-        assert self.vel == env.actuated_states, "Each velocity and only the velocities need to be actuated"
         self.dt = env.dt # time step of the environment
         
         # Convex optimization problem to project predicted next state on reachable set
-        self.nb_vertices = self.extremal_actions.shape[0]
-        x = cp.Variable(self.nb_vertices) # 1 coefficient for each vertex to describe point in convexhull
+        x = cp.Variable(self.nb_actions) # 1 coefficient for each vertex to describe point in convexhull
         
-        # Projecting only the velocity states
-        P = cp.Parameter((len(self.vel), self.nb_vertices)) # vertices
+        # Projecting only the velocies
+        P = cp.Parameter((len(self.vel), self.nb_actions)) # vertices
         z = cp.Parameter(len(self.vel))     # point to project into convexhull of vertices
         
         base_constraints = [sum(x) == 1, x >= 0] # ensure that we get a convex combination of vertices
@@ -76,32 +73,38 @@ class Projector():
         assert base_problem.is_dpp()
         self.base_cvxpylayer = CvxpyLayer(base_problem, parameters=[P, z], variables=[x])
     
-    
-        if self.reference:
-            assert self.states_projected == "vel", "Reference projectors need to project the velocity"
-            
-            self.ref_states_id = [19, 20, 21, 22, 23, 24] # velocities and angular velocities indices in state
-            self.ref_vel_id = [0, 1, 2, 3, 4, 5] # velocities and angular velocities indices in qvel
-            print("The Reference Projector matches the velocities and angular velocities of the quadcopter")
+        if self.reference: # use some velocity states as reference during the projection
+            if env.name in ["GO1", "GO2"]:
+                raise Exception("The Reference Projector is not implemented for the Unitree GO1 and GO2")
+            elif env.name == "Quadcopter":
+                self.ref_states_id = [7, 8, 9, 10, 11, 12] # velocities and angular velocities indices in state
+                self.ref_vel_id = [0, 1, 2, 3, 4, 5] # velocities and angular velocities indices in qvel
+                print("The Reference Projector matches the velocities and angular velocities of the Quadcopter")
+            elif env.name in ["Hopper", "Walker", "HalfCheetah"]:
+                self.ref_vel_id = [2] # velocities and angular velocities indices in qvel
+                self.ref_states_id = [self.vel[2]] # velocities and angular velocities indices in state
+                print(f"The Reference Projector matches the head angle velocity of the {self.env.name}")
+            else:
+                raise NotImplementedError(f"The Reference projector is not implemented for {env.name}")
             
             ref = cp.Parameter(len(self.ref_states_id)) # reference states to match
-            params = [P, z, ref]       
             
             penalized_objective = cp.Minimize(cp.pnorm(P @ x - z, p=2) + cp.pnorm(P[self.ref_vel_id] @ x - ref, p=2) )
             penalized_problem = cp.Problem(penalized_objective, base_constraints)
             assert penalized_problem.is_dpp()
-            self.penalized_cvxpylayer = CvxpyLayer(penalized_problem, parameters=params, variables=[x])
+            self.penalized_cvxpylayer = CvxpyLayer(penalized_problem, parameters=[P, z, ref], variables=[x])
             
         
         
     @torch.no_grad()
-    def reachable_vertices(self, States: torch.Tensor, actions: torch.Tensor):
+    def _reachable_vertices(self, States: torch.Tensor, actions: torch.Tensor):
         """Generates the reachable set from 'States'.
-        Returns a list of extremal vertices corresponding to bang inputs: nb_actions = 2**action_size
-        In:  current state (nb_traj, state_size)
-             actions (nb_trajs, nb_actions, action_size)
-        Out: reachable vertices (nb_traj, nb_actions, state_size)"""
-        
+        Arguments:
+            - States : current state of each trajectory (nb_traj, state_size)
+            - actions : extremal actions to take for each trajectory (nb_trajs, nb_actions, action_size)
+        Returns:
+            - list of extremal vertices corresponding to the extremal actions (nb_traj, nb_actions, state_size)
+        """
         N_trajs = States.shape[0]
         S0 = States.cpu().numpy()
         actions = actions.cpu().numpy()
@@ -112,13 +115,12 @@ class Projector():
         for traj_id in range(N_trajs):
             for i in range(self.nb_actions):
                 self.env.reset_to(S0[traj_id])
-                self.env.step(actions[traj_id, i]) # don't need the observation, only full state
-                Reachable_vertices[traj_id, i] = self.env.get_full_state()
+                Reachable_vertices[traj_id, i] = self.env.step(actions[traj_id, i])[0]
         
         return torch.FloatTensor(Reachable_vertices).cpu()
 
 
-    def projection_probabilities(self, sigma: torch.Tensor):
+    def _projection_probabilities(self, sigma: torch.Tensor):
         """Calculates the probability of projection given sigma"""
         prob = torch.zeros_like(sigma)
         prob += sigma < self.sigma_min # probability = 1 for sigma < sigma_min
@@ -127,7 +129,7 @@ class Projector():
         return prob
 
 
-    def reshape_sigma(self, sigma, size):
+    def _reshape_sigma(self, sigma, size):
         """Reshape the noise level sigma into a tensor of desired size"""
         if type(sigma) == float:
             sigma = torch.ones((size))*sigma
@@ -141,14 +143,17 @@ class Projector():
     
     
     def project_traj(self, Trajs: torch.Tensor, Ref_Trajs: torch.Tensor = None,
-                     sigma: float = 0., normalized=True, Actions=None):
+                     sigma: float = 0., Actions: torch.Tensor = None):
         """Projects trajectories onto an admissible set at noise scale sigma, 
-        trying to keep them close to their reference trajectories
-        Trajs:     Tensor (N_trajs, horizon, state_size) assumed to be normalized
-        Ref_Trajs: Tensor (N_trajs, horizon, state_size) assumed to be normalized
-        Actions:   Tensor or Array (N_trajs, horizon, action_size)  or None
-        Return projected_trajs:   Tensor (N_trajs, horizon, state_size) 
-               projected_actions: Tensor (N_trajs, horizon, action_size) # last action unchanged
+        trying to keep them close to their reference trajectories.
+        Arguments:
+            - Trajs :     Trajectories to project (N_trajs, horizon, state_size) 
+            - Ref_Trajs : optional reference trajectories (N_trajs, horizon, state_size)
+            - sigma : optional noise level of the trajectories
+            - Actions :   optional predicted actions (N_trajs, horizon, action_size)
+        Returns:
+            - projected_trajectories :    (N_trajs, horizon, state_size) 
+            - projected_actions :  (N_trajs, horizon, action_size) 
         """
         
         if self.reference:
@@ -159,21 +164,21 @@ class Projector():
         N_steps = Trajs.shape[1]-1
         Proj_Trajs = Trajs.clone()
         if Actions is None:
-            Proj_Actions = torch.zeros((N_trajs, N_steps+1, self.action_size))
+            Proj_Actions = torch.zeros((N_trajs, N_steps+1, self.action_size), device=self.device)
         else:
             assert Actions.shape == (N_trajs, N_steps+1, self.action_size), f"Actions should be of shape ({N_trajs}, {N_steps+1}, {self.action_size})"
             if type(Actions) == torch.Tensor:
                 Proj_Actions = Actions.clone() # return a tensor of actions
             else:
-                Actions = torch.FloatTensor(Actions)
+                Actions = torch.FloatTensor(Actions).to(self.device)
                 Proj_Actions = Actions.clone()
                 
-        sigma = self.reshape_sigma(sigma, Trajs.shape[0])
+        sigma = self._reshape_sigma(sigma, Trajs.shape[0])
         
         if min(sigma) > self.sigma_max: # no projections to be done
             return Proj_Trajs, Proj_Actions
-        rand = torch.rand(N_steps) # random steps where projections are needed
-        pp = self.projection_probabilities(sigma) # vector (N_trajs, 1) of probabilities
+        rand = torch.rand(N_steps, device=self.device) # random steps where projections are needed
+        pp = self._projection_probabilities(sigma) # vector (N_trajs, 1) of probabilities
         idx = torch.arange(sigma.shape[0], device=self.device)
         
         for t_id in range(N_steps):
@@ -193,41 +198,41 @@ class Projector():
                 else:
                     A_t = Actions[idx_proj, t_id]
                     
-                Proj_Trajs[idx_proj, t_id+1, :], Proj_Actions[idx_proj, t_id, :] = self.make_next_state_admissible(S_t, S_t_dt, Ref_t_dt, sigma[idx_proj], normalized, A_t)
+                Proj_Trajs[idx_proj, t_id+1, :], Proj_Actions[idx_proj, t_id, :] = self.make_next_state_admissible(S_t, S_t_dt, Ref_t_dt=Ref_t_dt, sigma=sigma[idx_proj], A_t=A_t)
                 
         return Proj_Trajs, Proj_Actions
     
 
 
     def make_next_state_admissible(self, S_t: torch.Tensor, S_t_dt: torch.Tensor,
-                                   Ref_t_dt:torch.Tensor = None, sigma: float = 0.,
-                                   normalized=True, A_t: torch.Tensor = None):
-        """Makes S_t_dt admissible from S_t using a reachable set approximation
-        for the actuated states. 
-        Uses semi-implicit Euler integrator to assign the value of the unactuated states. 
-        Ref_t_dt is the reference next state from which S_t_dt should not be too far away
-        States are assumed to be normalized
-        S_t, S_t_dt, Ref_t_dt  Tensor(N_trajs, state_size)
-        A_t: candidate action  Tensor(N_trajs, action_size)"""
+                                   Ref_t_dt: torch.Tensor = None, sigma: float = 0.,
+                                   A_t: torch.Tensor = None):
+        """Projects next state S_t_dt in a reachable set approximation of S_t
+        for the velocities. The positions are deduced from velocities and
+        previous positions.
+        Arguments:
+            - S_t : current state of each trajectory (N_trajs, state_size)
+            - S_t_dt : predicted next state of each trajectory (N_trajs, state_size)
+            - Ref_t_dt : reference next state from which S_t_dt should not be too far away (N_trajs, state_size)
+            - sigma : noise level of the trajectories
+            - A_t: candidate actions for each trajectory (N_trajs, action_size)
+        Returns:
+            - adm_S_t_dt : admissible next state for each trajectory (N_trajs, state_size)
+            - adm_A_t : corresponding admissible action for each trajectory (N_trajs, action_size)
+        """
         
         N_trajs = S_t.shape[0]
-        sigma = self.reshape_sigma(sigma, N_trajs)
+        sigma = self._reshape_sigma(sigma, N_trajs)
         
-        if normalized: # Unnormalize states to use the dynamics
-            S_t = self.normalizer.unnormalize(S_t)
-            S_t_dt = self.normalizer.unnormalize(S_t_dt)
-            if self.reference:
-                Ref_t_dt = self.normalizer.unnormalize(Ref_t_dt)
-        
-        adm_S_t_dt = torch.zeros_like(S_t_dt) # admissible next state (to be computed)
-        adm_A_t = torch.zeros((N_trajs, self.action_size))
+        adm_S_t_dt = torch.zeros_like(S_t_dt, device=self.device) # admissible next state (to be computed)
+        adm_A_t = torch.zeros((N_trajs, self.action_size), device=self.device)
         if A_t is None:
             Action_vertices = torch.broadcast_to(self.extremal_actions, (N_trajs, self.nb_actions, self.action_size))
         else:
             A_t = A_t.reshape((N_trajs, 1, self.action_size)).repeat_interleave(self.nb_actions, dim=1)
             Action_vertices = (A_t + 0.1*self.extremal_actions).clip(self.a_min, self.a_max) # action
         
-        R = self.reachable_vertices(S_t, Action_vertices)
+        R = self._reachable_vertices(S_t, Action_vertices)
         
         for traj_id in range(N_trajs): # Can't be parallelized because of the projection
             
@@ -236,21 +241,19 @@ class Projector():
             Vertices = R[traj_id, :, self.vel].T.to(self.device) # vertices of the reachable set in velocity space
             
             ### Convex optimization: closest point to s_vel in the convex hull of the vertices of the reachable set
-            if self.reference and sigma[traj_id] < self.sigma_min: # at small noise level keep angular velocity of the top joint close to the reference
+            if self.reference and sigma[traj_id] < self.sigma_min: # only use the reference at small noise level
                 ref = Ref_t_dt[traj_id, self.ref_states_id].clone()
                 solution, = self.penalized_cvxpylayer(Vertices, s_pred, ref)
             
             else: # either not reference or too much noise
                 solution, = self.base_cvxpylayer(Vertices, s_pred)
            
+            # solution = solution.to(self.device)
             adm_A_t[traj_id] = solution @ Action_vertices[traj_id]
             
-            # Calculates the next state
+            # Calculates the next state's velocities and positions
             adm_S_t_dt[traj_id, self.vel] = Vertices @ solution
             adm_S_t_dt[traj_id, self.pos] = self.env.pos_from_vel(S_t[traj_id], adm_S_t_dt[traj_id, self.vel])
-        
-        if normalized: # Normalize admissible state
-            adm_S_t_dt = self.normalizer.normalize(adm_S_t_dt)
         
         return adm_S_t_dt, adm_A_t
     
@@ -263,80 +266,66 @@ class Projector():
 
 
 class Admissible_Projector(Projector):
-    def __init__(self, env, sigma_min:float = 0.0021,
-                 sigma_max:float = None):
-        """Class to project states and whole trajectories into their closest
-        admissible set. Can be incorporated as a differentiable layer.
+    def __init__(self, env, sigma_min:float = 0.0021, sigma_max:float = None,
+                 device:str = "cpu"):
+        """Naive trajectory projector onto their closest admissible set using.
+        convex optimization. Can be incorporated as a differentiable layer.
+        Arguments:
+            - env : Gym-like environment
+            - sigma_min : noise value under which all state transitions are projected
+            - sigma_max : optional noise value over which none of the the state transitions are projected
+                        When sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
+            - device : "cpu" or "cuda"
          """
         
         if sigma_max is None:
-            sigma_max = sigma_min # Full projection for sigma < sigma_min
-        super().__init__(env, sigma_min, sigma_max, reference=False)
+            sigma_max = sigma_min # projects only for sigma < sigma_min
+        super().__init__(env, sigma_min, sigma_max, reference=False, device=device)
         
-        self.name = "admissible_proj_sigma_" + str(sigma_min)
+        self.name = "Adm_proj_sigma_" + str(sigma_min)
     
         
-
-
-
-
-
-
 
 class Reference_Projector(Projector):
-    def __init__(self, env, sigma_min:float = 0.0021,
-                 sigma_max:float = 0.2):
-        """Class to project states and whole trajectories into their closest
-        admissible set guided by the reference trajectory. 
-        Can be incorporated as a differentiable layer.
-        sigma > sigma_max: no projections
-        sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
-        sigma < sigma_min: 100% projection"""
+    def __init__(self, env, sigma_min:float = 0.0021, sigma_max:float = 0.2,
+                 device:str = "cpu"):
+        """Reference trajectory projector onto their closest admissible set using 
+        convex optimization. Can be incorporated as a differentiable layer.
         
-        super().__init__(env, sigma_min, sigma_max, reference=True)
-        self.name = "reference_proj_sigma_" + str(sigma_min) + "_" + str(sigma_max)
+        Arguments:
+            - env : Gym-like environment
+            - sigma_min : noise value under which all state transitions are projected
+            - sigma_max : noise value over which none of the the state transitions are projected
+            - device : "cpu" or "cuda"
         
-
+        When sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
+        """
         
-
-    
-
-
+        super().__init__(env, sigma_min, sigma_max, reference=True, device=device)
+        self.name = "Ref_proj_sigma_" + str(sigma_min) + "_" + str(sigma_max)
+        
 
 #%% State-Action Projector
-import os
-import torch.nn as nn
-from tqdm import tqdm
-import matplotlib.pyplot as plt
 
-
-class SA_Projector():
-    def __init__(self, env, sigma_min=0.0021, sigma_max=0.2, width=128):
-        """State-Action projector without convex optimization.
-        sigma > sigma_max: no projections
-        sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
-        sigma < sigma_min: 100% projection
+class SA_Projector(Projector):
+    def __init__(self, env, sigma_min:float = 0.0021, sigma_max:float = 0.2,
+                 device:str = "cpu", width:int = 128):
+        """State-Action projector without convex optimization, but using a 
+        neural network to predict a feedback correction on the action leading to
+        the admissible next state.
+        
+        Arguments:
+            - env : Gym-like environment
+            - sigma_min : noise value under which all state transitions are projected
+            - sigma_max : noise value over which none of the the state transitions are projected
+            - device : "cpu" or "cuda"
+            - width : width of the feedback correction neural network
+        
+        When sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
         """
 
-        self.env = env
-        self.normalizer = normalizer
-        assert sigma_min >= 0., "Projections happen for sigma <= sigma_min which must be non-negative"
-        self.sigma_min = sigma_min
-        assert sigma_max >= sigma_min
-        self.sigma_max = sigma_max
-        
-        self.name = "SA_proj_" + str(width) + "_sigma_"+ str(sigma_min) + "_" + str(sigma_max) 
-        
-        self.device = normalizer.mean.device
-        self.state_size = self.env.state_size
-        self.action_size = self.env.action_size
-        self.a_min = torch.FloatTensor(self.env.action_min).to(self.device)
-        self.a_max = torch.FloatTensor(self.env.action_max).to(self.device)
-        
-        self.vel = self.env.velocity_states
-       
-        self.dt = env.dt # time step of the environment
-        self.eps = 1e-3 # precision of the projector
+        super().__init__(env, sigma_min, sigma_max, reference=False, device=device)
+        self.name = "SA_proj_" + str(width) + "_sigma_"+ str(sigma_min) + "_" + str(sigma_max)
 
         # Network to predict the difference in action given the difference in velocity between two states obtained from a fixed initial state
         self.width = width
@@ -346,13 +335,14 @@ class SA_Projector():
         self.optim = torch.optim.AdamW(self.net.parameters(), lr=2e-4, weight_decay=1e-4)
 
 
-    def train(self, Trajs: torch.Tensor, Actions: torch.Tensor, batch_size=32,
-              n_gradient_steps=100_000, extra=""):
+    def train(self, Trajs: torch.Tensor, Actions: torch.Tensor, batch_size: int = 64,
+              n_gradient_steps:int = 100_000, extra:str = ""):
         """Train the neural network of the projector to reconstitute the action
-        given a desired change in final state
-        Trajs   (N_trajs, H, state_size)
-        Actions (N_trajs, H, action_size)
-        Trajs are assumed to be NOT normalized"""
+        given a desired change in final state.
+        Arguments:
+            - Trajs : dataset of admissible trajectories (N_trajs, H, state_size)
+            - Actions : dataset of corresponding actions (N_trajs, H, action_size)
+        """
         
         N_trajs, H, _ = Trajs.shape
         assert Trajs.shape[2] == self.state_size
@@ -369,8 +359,7 @@ class SA_Projector():
         Noised_S_t_dt = np.zeros((N, self.state_size))
         for i in range(N):
             self.env.reset_to(S_t[i])
-            self.env.step(Noised_A_t[i].cpu().numpy())
-            Noised_S_t_dt[i] = self.env.get_full_state() # noised next state
+            Noised_S_t_dt[i] = self.env.step(Noised_A_t[i].cpu().numpy())[0] # noised next state
         
         # Training inputs to the neural network
         Vel_dif = S_t_dt[:, self.vel] - torch.FloatTensor(Noised_S_t_dt[:, self.vel]).to(self.device) # difference in velocities
@@ -403,158 +392,71 @@ class SA_Projector():
         plt.plot(self.training_loss.detach().cpu().numpy())
         plt.title("Training loss for " + self.name)
         plt.show()
-
+        self._freeze()
 
 
     def save(self, extra:str = ""):
-         torch.save({'net': self.net.state_dict()}, "trained_models/"+ self.name+extra+".pt")
+         torch.save({'net': self.net.state_dict()}, self.env.name+"/trained_models/"+ self.name+extra+".pt")
          
          
     def load(self, extra:str = ""):
-         name = "trained_models/" + self.name + extra + ".pt"
+         name = self.env.name + "/trained_models/" + self.name + extra + ".pt"
          if os.path.isfile(name):
              print("Loading " + name)
              checkpoint = torch.load(name, map_location=self.device, weights_only=True)
              self.net.load_state_dict(checkpoint['net'])
+             self._freeze()
              return True # loaded
          else:
              print("File " + name + " doesn't exist. Not loading anything.")
              return False # not loaded
-
-
-
-    def projection_probabilities(self, sigma: torch.Tensor):
-        """Calculates the probability of projection given sigma"""
-        prob = torch.zeros_like(sigma)
-        prob += sigma < self.sigma_min # probability = 1 for sigma < sigma_min
-        idx = (sigma >= self.sigma_min) * (sigma < self.sigma_max)
-        prob[idx] += (self.sigma_max - sigma[idx])/(self.sigma_max - self.sigma_min)
-        return prob
-
-
-    def reshape_sigma(self, sigma, size):
-        """Reshape the noise level sigma into a tensor of desired size"""
-        if type(sigma) == float:
-            sigma = torch.ones((size))*sigma
-        elif type(sigma) == torch.Tensor:
-            sigma = sigma.reshape((-1))
-        elif type(sigma) == np.ndarray:
-            sigma = torch.FloatTensor(sigma)
-        else:
-            raise Exception(f"sigma is neither a float, array, or a tensor but a {type(sigma)}")
-        return sigma
-    
-    
-    def project_traj(self, Trajs: torch.Tensor, Actions: torch.Tensor, Cmd: torch.Tensor,
-                     sigma: float = 0., normalized=True):
-        """Projects trajectories onto an admissible set at noise scale sigma, 
-        trying to keep them close to their reference trajectories
-        Trajs:     Tensor (N_trajs, horizon, state_size) assumed to be normalized
-        Actions:   Tensor or Array (N_trajs, horizon, action_size)
-        Return projected_trajs:   Tensor (N_trajs, horizon, state_size) 
-               projected_actions: Tensor (N_trajs, horizon, action_size) # last action unchanged
-        """
-        
-        N_trajs = Trajs.shape[0]
-        N_steps = Trajs.shape[1]-1
-        Proj_Trajs = Trajs.clone()
-        self.Cmd = Cmd.cpu().numpy().copy()
-        
-        assert Actions.shape == (N_trajs, N_steps+1, self.action_size), f"Actions should be of shape ({N_trajs}, {N_steps+1}, {self.action_size})"
-        if type(Actions) == torch.Tensor:
-            Proj_Actions = Actions.clone() # return a tensor of actions
-        else:
-            Actions = torch.FloatTensor(Actions)
-            Proj_Actions = Actions.clone()
-            
-        sigma = self.reshape_sigma(sigma, Trajs.shape[0])
-        
-        if min(sigma) > self.sigma_max: # no projections to be done
-            return Proj_Trajs, Proj_Actions
-        
-        rand = torch.rand(N_steps) # random steps where projections are needed
-        pp = self.projection_probabilities(sigma) # vector (N_trajs, 1) of probabilities
-        idx = torch.arange(sigma.shape[0], device=self.device)
-        
-        for t_id in range(N_steps):
-            # indices of the trajectories that need projections
-            idx_proj = idx[rand[t_id] < pp]    
-            if len(idx_proj) > 0: # needs exact projection
-                S_t = Proj_Trajs[idx_proj, t_id, :] # projected current state
-                S_t_dt = Trajs[idx_proj, t_id+1, :] # predicted next state to be made admissible
-                A_t = Actions[idx_proj, t_id]
-                    
-                Proj_Trajs[idx_proj, t_id+1, :], Proj_Actions[idx_proj, t_id, :] = self.make_next_state_admissible(S_t, S_t_dt, A_t, sigma[idx_proj], normalized)
-                
-        return Proj_Trajs, Proj_Actions
     
     
     def make_next_state_admissible(self, S_t: torch.Tensor, S_t_dt: torch.Tensor,
                                    A_t: torch.Tensor, sigma: float = 0.,
-                                   normalized=True):
-        """Makes S_t_dt admissible from S_t using a reachable set approximation
-        for the actuated states. 
-        Uses semi-implicit Euler integrator to assign the value of the unactuated states. 
-        States are assumed to be normalized
-        S_t, S_t_dt  Tensor(N_trajs, state_size)
-        A_t: candidate action  Tensor(N_trajs, action_size)"""
+                                   Ref_t_dt = None):
+        """Makes S_t_dt admissible from S_t by applying action A_t plus a feedback
+        correction action derived by the neural network based on the difference
+        between S_t_dt and the state reached when applying A_t.
+        
+        Arguments:
+            - S_t : current state of each trajectory (N_trajs, state_size)
+            - S_t_dt : predicted next state of each trajectory (N_trajs, state_size)
+            - sigma : noise level of the trajectories
+            - A_t: candidate actions for each trajectory (N_trajs, action_size)
+            - Ref_t_dt : compatibility argument not used here
+        Returns:
+            - adm_S_t_dt : admissible next state for each trajectory (N_trajs, state_size)
+            - adm_A_t : corresponding admissible action for each trajectory (N_trajs, action_size)
+        """
+        assert Ref_t_dt is None, "SA-Projector cannot use a reference"
         
         N_trajs = S_t.shape[0]
-        sigma = self.reshape_sigma(sigma, N_trajs)
-        
-        if normalized: # Unnormalize states to use the dynamics
-            S_t = self.normalizer.unnormalize(S_t)
-            S_t_dt = self.normalizer.unnormalize(S_t_dt)
+        sigma = self._reshape_sigma(sigma, N_trajs)
         
         np_S_t_dt = S_t_dt.clone().detach().cpu().numpy() # next state computed with simulator (numpy)
         np_A_t = A_t.clone().detach().cpu().numpy()
         S_t = S_t.detach().cpu().numpy()
         
-        if S_t_dt.requires_grad:
+        for traj_id in range(N_trajs): # Can't be parallelized because of the environment calls
+            self.env.reset_to(S_t[traj_id])
+            s_ol = self.env.step(np_A_t[traj_id])[0] # open-loop next state
+            # velocity difference between state prediction and applying the action prediction
+            dif = S_t_dt[traj_id, self.vel] - torch.FloatTensor(s_ol[self.vel]).to(self.device)
+            da_t = self.net(dif) # action correction
+           
+            A_t[traj_id] = (A_t[traj_id] + da_t).clip(self.a_min, self.a_max) # corrected action
+            np_A_t[traj_id] += da_t.detach().cpu().numpy()
+            self.env.reset_to(S_t[traj_id])
+            np_S_t_dt[traj_id] = self.env.step(np_A_t[traj_id])[0] # corrected next state
         
-            for traj_id in range(N_trajs): # Can't be parallelized because of the environment calls
-                self.env.reset_to(S_t[traj_id], command=self.Cmd[traj_id])
-                self.env.step(np_A_t[traj_id])
-                s_ol = self.env.get_full_state() # open-loop next state
-                # velocity difference between state prediction and applying the action prediction
-                dif = S_t_dt[traj_id, self.vel] - torch.FloatTensor(s_ol[self.vel]).to(self.device)
-                if norm(dif) < self.eps:
-                    continue # S_t_dt matches A_t, next state is already admissible
-                
-                da_t = self.net(dif) # action correction
-               
-                A_t[traj_id] = (A_t[traj_id] + da_t).clip(self.a_min, self.a_max) # corrected action
-                np_A_t[traj_id] += da_t.detach().cpu().numpy()
-                self.env.reset_to(S_t[traj_id], command=self.Cmd[traj_id])
-                self.env.step(np_A_t[traj_id])
-                np_S_t_dt[traj_id] = self.env.get_full_state() # corrected next state
-            
-            S_t_dt += torch.FloatTensor(np_S_t_dt).to(self.device) - S_t_dt.detach() # i.e. S_t_dt = adm_S_t_dt but without losing gradients
-        
-        else: # no gradient means sampling time
-            for traj_id in range(N_trajs): # Can't be parallelized because of the environment calls
-                self.env.reset_to(S_t[traj_id], command=self.Cmd[traj_id])
-                self.env.step(np_A_t[traj_id])
-                s_ol = self.env.get_full_state() # open-loop next state
-                # velocity difference between state prediction and applying the action prediction
-                dif = S_t_dt[traj_id, self.vel] - torch.FloatTensor(s_ol[self.vel]).to(self.device)
-                da_t = self.net(dif) # action correction
-               
-                A_t[traj_id] = (A_t[traj_id] + da_t).clip(self.a_min, self.a_max) # corrected action
-                np_A_t[traj_id] += da_t.detach().cpu().numpy()
-                self.env.reset_to(S_t[traj_id], command=self.Cmd[traj_id])
-                self.env.step(np_A_t[traj_id])
-                S_t_dt[traj_id] = torch.FloatTensor(self.env.get_full_state()).to(self.device) # corrected next state
-        
-        
-        if normalized: # Normalize admissible state
-            S_t_dt = self.normalizer.normalize(S_t_dt)
-        
+        S_t_dt += torch.FloatTensor(np_S_t_dt).to(self.device) - S_t_dt.detach() # i.e. S_t_dt = adm_S_t_dt but without losing gradients
+    
         return S_t_dt, A_t
     
     
     def _freeze(self):
-        """Freeze the Neural Network after training or loading"""
+        """Freeze the neural network after training or loading"""
         for param in self.net.parameters():
             param.requires_grad = False
 
@@ -564,127 +466,52 @@ class SA_Projector():
 #%% Action Projector
 
 
-class Action_Projector():
-    def __init__(self, env, sigma_min=0.0021, sigma_max=0.2):
-        """Action projector without convex optimization: 
+class Action_Projector(Projector):
+    def __init__(self, env, sigma_min:float = 0.0021, sigma_max:float = 0.2,
+                 device:str = "cpu"):
+        """Action projector without convex optimization relying on an
             open-loop application of the predicted actions.
-        sigma > sigma_max: no projections
-        sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
-        sigma < sigma_min: 100% projection
-        """
-
-        self.env = env
-        self.normalizer = normalizer
-        assert sigma_min >= 0., "Projections happen for sigma <= sigma_min which must be non-negative"
-        self.sigma_min = sigma_min
-        assert sigma_max >= sigma_min
-        self.sigma_max = sigma_max
-        
-        self.name = "Action_proj_sigma_"+ str(sigma_min) + "_" + str(sigma_max) 
-        
-        self.device = normalizer.mean.device
-        self.state_size = self.env.state_size
-        self.action_size = self.env.action_size
-        self.a_min = torch.FloatTensor(self.env.action_min)
-        self.a_max = torch.FloatTensor(self.env.action_max)
-        self.dt = env.dt # time step of the environment
-        
-
-    def projection_probabilities(self, sigma: torch.Tensor):
-        """Calculates the probability of projection given sigma"""
-        prob = torch.zeros_like(sigma)
-        prob += sigma < self.sigma_min # probability = 1 for sigma < sigma_min
-        idx = (sigma >= self.sigma_min) * (sigma < self.sigma_max)
-        prob[idx] += (self.sigma_max - sigma[idx])/(self.sigma_max - self.sigma_min)
-        return prob
-
-
-    def reshape_sigma(self, sigma, size):
-        """Reshape the noise level sigma into a tensor of desired size"""
-        if type(sigma) == float:
-            sigma = torch.ones((size))*sigma
-        elif type(sigma) == torch.Tensor:
-            sigma = sigma.reshape((-1))
-        elif type(sigma) == np.ndarray:
-            sigma = torch.FloatTensor(sigma)
-        else:
-            raise Exception(f"sigma is neither a float, array, or a tensor but a {type(sigma)}")
-        return sigma
-    
-    
-    def project_traj(self, Trajs: torch.Tensor, Actions: torch.Tensor, Cmd: torch.Tensor,
-                     sigma: float = 0., normalized=True):
-        """Projects trajectories onto an admissible set at noise scale sigma, 
-        trying to keep them close to their reference trajectories
-        Trajs:     Tensor (N_trajs, horizon, state_size) assumed to be normalized
-        Actions:   Tensor or Array (N_trajs, horizon, action_size)
-        Return projected_trajs:   Tensor (N_trajs, horizon, state_size) 
-               projected_actions: Tensor (N_trajs, horizon, action_size) # last action unchanged
-        """
-        
-        N_trajs = Trajs.shape[0]
-        N_steps = Trajs.shape[1]-1
-        Proj_Trajs = Trajs.clone()
-        self.Cmd = Cmd.cpu().numpy().copy()
-        
-        assert Actions.shape == (N_trajs, N_steps+1, self.action_size), f"Actions should be of shape ({N_trajs}, {N_steps+1}, {self.action_size})"
-        if type(Actions) == torch.Tensor:
-            Proj_Actions = Actions.clone() # return a tensor of actions
-        else:
-            Actions = torch.FloatTensor(Actions)
-            Proj_Actions = Actions.clone()
             
-        sigma = self.reshape_sigma(sigma, Trajs.shape[0])
+        Arguments:
+            - env : Gym-like environment
+            - sigma_min : noise value under which all state transitions are projected
+            - sigma_max : noise value over which none of the the state transitions are projected
+            - device : "cpu" or "cuda"
         
-        if min(sigma) > self.sigma_max: # no projections to be done
-            return Proj_Trajs, Proj_Actions
+        When sigma in [sigma_min, sigma_max]: projection probability proportional to sigma
+        """
+        super().__init__(env, sigma_min, sigma_max, reference=False, device=device)
+        self.name = "A_proj_sigma_"+ str(sigma_min) + "_" + str(sigma_max) 
         
-        rand = torch.rand(N_steps) # random steps where projections are needed
-        pp = self.projection_probabilities(sigma) # vector (N_trajs, 1) of probabilities
-        idx = torch.arange(sigma.shape[0], device=self.device)
-        
-        for t_id in range(N_steps):
-            # indices of the trajectories that need projections
-            idx_proj = idx[rand[t_id] < pp]    
-            if len(idx_proj) > 0: # needs exact projection
-                S_t = Proj_Trajs[idx_proj, t_id, :] # projected current state
-                S_t_dt = Trajs[idx_proj, t_id+1, :] # predicted next state to be made admissible
-                A_t = Actions[idx_proj, t_id]
-                    
-                Proj_Trajs[idx_proj, t_id+1, :], Proj_Actions[idx_proj, t_id, :] = self.make_next_state_admissible(S_t, S_t_dt, A_t, sigma[idx_proj], normalized)
-                
-        return Proj_Trajs, Proj_Actions
-    
-
 
     def make_next_state_admissible(self, S_t: torch.Tensor, S_t_dt: torch.Tensor,
                                    A_t: torch.Tensor, sigma: float = 0.,
-                                   normalized=True):
+                                   Ref_t_dt = None):
         """Modifies S_t_dt to make it admissible from S_t using A_t
-        States are assumed to be normalized
-        S_t, S_t_dt  Tensor(N_trajs, state_size)
-        A_t: candidate action  Tensor(N_trajs, action_size)"""
+        
+        Arguments:
+            - S_t : current state of each trajectory (N_trajs, state_size)
+            - S_t_dt : predicted next state of each trajectory (N_trajs, state_size)
+            - sigma : noise level of the trajectories
+            - A_t: candidate actions for each trajectory (N_trajs, action_size)
+            - Ref_t_dt : compatibility argument not used here
+        Returns:
+            - adm_S_t_dt : admissible next state for each trajectory (N_trajs, state_size)
+            - adm_A_t : corresponding admissible action for each trajectory (N_trajs, action_size)
+        """
+        assert Ref_t_dt is None, "A-Projector cannot use a reference"
         
         N_trajs = S_t.shape[0]
-        sigma = self.reshape_sigma(sigma, N_trajs)
-        
-        if normalized: # Unnormalize states to use the dynamics
-            S_t = self.normalizer.unnormalize(S_t)
-            S_t_dt = self.normalizer.unnormalize(S_t_dt)
+        sigma = self._reshape_sigma(sigma, N_trajs)
         
         np_A_t = A_t.clone().detach().cpu().numpy()
         S_t = S_t.detach().cpu().numpy()
         
         for traj_id in range(N_trajs): # Can't be parallelized because of the environment calls
-            
-            self.env.reset_to(S_t[traj_id], command=self.Cmd[traj_id])
-            self.env.step(np_A_t[traj_id])
-            s_ol = self.env.get_full_state() # open-loop next state
+            self.env.reset_to(S_t[traj_id])
+            s_ol = self.env.step(np_A_t[traj_id])[0] # open-loop next state
             dif = torch.FloatTensor(s_ol).to(self.device) - S_t_dt[traj_id]
             S_t_dt[traj_id] += dif.detach() # i.e. S_t_dt = s_ol but without losing gradients
-        
-        if normalized: # Normalize admissible state
-            S_t_dt = self.normalizer.normalize(S_t_dt)
         
         return S_t_dt, A_t
     
