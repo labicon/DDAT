@@ -199,7 +199,7 @@ class Planner():
         n_samples = S0.shape[0] # total number of samples = N_s0 * n_samples_per_s0
         
         ### Prediction by the Diffusion model
-        pred = self.ode.sample(s0=s0, attr=attr, traj_len=traj_len, n_samples=n_samples,
+        pred = self.ode.sample(s0=S0, attr=attr, traj_len=traj_len, n_samples=n_samples,
                                 N=N, projector=projector)
         if self.modality == "S":
             return self._best_S_traj(s0, pred, N_s0, n_samples_per_s0, traj_len)

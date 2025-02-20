@@ -265,7 +265,7 @@ class ODE():
         for i in range(self.N):
             with torch.no_grad():
                 if self.is_conditional:
-                    D = self.D(x.repeat(2,1,1)/self.scale_s[i], torch.ones((2*n_samples,1,1),device=self.device)*self.sigma_s[i], attr, attr_mask, use_ema=True)
+                    D = self.D(x.repeat(2,1,1)/self.scale_s[i], torch.ones((2*n_samples,1,1),device=self.device)*self.sigma_s[i], nor_attr, attr_mask, use_ema=True)
                     D = w*D[:n_samples] + (1-w)*D[n_samples:]
                 else:
                     D = self.D(x/self.scale_s[i], torch.ones((n_samples,1,1),device=self.device)*self.sigma_s[i], use_ema=True)
