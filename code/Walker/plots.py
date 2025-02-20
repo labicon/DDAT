@@ -17,7 +17,7 @@ def plot_traj(env, Traj:np.ndarray, title:str = ""):
     assert len(Traj.shape) == 2, "Trajectory must be a 2D array"
     assert Traj.shape[1] == env.state_size, "Trajectory must contain the full state"
     N = Traj.shape[0] # number of steps of the trajectory before terminating
-    time = env.dt * np.arange(N)
+    time = np.arange(N)
     
     height_id = 1
     angle_id = 2
@@ -32,7 +32,7 @@ def plot_traj(env, Traj:np.ndarray, title:str = ""):
     plt.plot([0., time[-1] ], [min_angle, min_angle], color="red", linestyle="dashed", linewidth=1)
     plt.plot([0., time[-1] ], [max_angle, max_angle], color="red", linestyle="dashed", linewidth=1)
     plt.ylabel("Torso angle (deg)")
-    plt.xlabel("time (s)")
+    plt.xlabel("timesteps")
     ax.set_ylim([max(min_angle-10, (y_min-0.1*abs(y_min))*180/np.pi), min(max_angle+10, y_max*180/np.pi*1.1)])
     plt.show()       
 
@@ -44,7 +44,7 @@ def plot_traj(env, Traj:np.ndarray, title:str = ""):
     plt.plot([0., time[-1] ], [env.min_height, env.min_height], color="red", linestyle="dashed", linewidth=1)
     plt.plot([0., time[-1] ], [env.max_height, env.max_height], color="red", linestyle="dashed", linewidth=1)
     plt.ylabel("Torso height (m)")
-    plt.xlabel("time (s)")
+    plt.xlabel("timesteps")
     ax.set_ylim([max(env.min_height-0.1, y_min-0.1*abs(y_min)), min(env.max_height+0.1, y_max*1.1)])
     plt.show()
         
@@ -64,8 +64,8 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title:str = "",
     if traj_4 is not None:
         assert len(traj_4.shape) == 2, "Trajectory 4 must be a 2D array"
     
-    time_1 = env.dt * np.arange(traj_1.shape[0])
-    time_2 = env.dt * np.arange(traj_2.shape[0])
+    time_1 = np.arange(traj_1.shape[0])
+    time_2 = np.arange(traj_2.shape[0])
     time_max = max(time_1[-1], time_2[-1])
     
     height_id = 1
@@ -79,13 +79,13 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title:str = "",
     y_max = max(traj_1[:, angle_id].max(), traj_2[:, angle_id].max())
     y_min = min(traj_1[:, angle_id].min(), traj_2[:, angle_id].min())
     if traj_3 is not None:
-        time_3 = env.dt * np.arange(traj_3.shape[0])
+        time_3 = np.arange(traj_3.shape[0])
         time_max = max(time_max, time_3[-1])
         plt.plot(time_3, traj_3[:, angle_id]*180/np.pi, label=label_3, linewidth=3)
         y_max = max(traj_3[:, angle_id].max(), y_max)
         y_min = min(traj_3[:, angle_id].min(), y_min)
     if traj_4 is not None:
-        time_4 = env.dt * np.arange(traj_4.shape[0])
+        time_4 = np.arange(traj_4.shape[0])
         time_max = max(time_max, time_4[-1])
         plt.plot(time_4, traj_4[:, angle_id]*180/np.pi, label=label_4, linewidth=3)
         y_max = max(traj_4[:, angle_id].max(), y_max)
@@ -95,7 +95,7 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title:str = "",
     plt.plot([0., time_max], [min_angle, min_angle], color="red", linestyle="dashed", linewidth=1)
     plt.plot([0., time_max], [max_angle, max_angle], color="red", linestyle="dashed", linewidth=1)
     plt.ylabel("Torso angle (deg)")
-    plt.xlabel("time (s)")
+    plt.xlabel("timesteps")
     ax.set_ylim([max(min_angle-10, (y_min-0.1*abs(y_min))*180/np.pi), min(max_angle+10, y_max*180/np.pi*1.1)])
     plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9, loc=legend_loc)
     plt.show()       
@@ -120,7 +120,7 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title:str = "",
         plt.plot([0., time_max], [env.min_height, env.min_height], color="red", linestyle="dashed", linewidth=1)
         plt.plot([0., time_max], [env.max_height, env.max_height], color="red", linestyle="dashed", linewidth=1)
         plt.ylabel("Torso height (m)")
-        plt.xlabel("time (s)")
+        plt.xlabel("timesteps")
         ax.set_ylim([max(env.min_height-0.1, y_min-0.1*abs(y_min)), min(env.max_height+0.1, y_max*1.1)])
         plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
         plt.show()

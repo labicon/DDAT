@@ -18,7 +18,7 @@ def plot_traj(env, Traj:np.ndarray, title:str = ""):
     assert len(Traj.shape) == 2, "Trajectory must be a 2D array"
     assert Traj.shape[1] == env.state_size, "Trajectory must contain the full state"
     N = Traj.shape[0] # number of steps of the trajectory before terminating
-    time = env.dt * np.arange(N)
+    time = np.arange(N)
    
     fig, ax = nice_plot()
     plt.title(title)
@@ -31,7 +31,7 @@ def plot_traj(env, Traj:np.ndarray, title:str = ""):
     plt.plot([0., time[-1] ], [max_angle, max_angle], color="red", linestyle="dashed", linewidth=1)
     ax.set_ylim([max(min_angle-10, (y_min-0.1*abs(y_min))*180/np.pi), min(max_angle+10, y_max*180/np.pi*1.1)])
     plt.ylabel("Front tip angle (deg)")
-    plt.xlabel("time (s)")
+    plt.xlabel("timesteps")
     plt.show()       
         
    
@@ -48,8 +48,8 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
     if traj_4 is not None:
         assert len(traj_4.shape) == 2, "Trajectory 4 must be a 2D array"
     
-    time_1 = env.dt * np.arange(traj_1.shape[0])
-    time_2 = env.dt * np.arange(traj_2.shape[0])
+    time_1 = np.arange(traj_1.shape[0])
+    time_2 = np.arange(traj_2.shape[0])
     time_max = max(time_1[-1], time_2[-1])
     
     fig, ax = nice_plot()
@@ -60,13 +60,13 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
     y_max = max(traj_1[:, 2].max(), traj_2[:, 2].max())
     y_min = min(traj_1[:, 2].min(), traj_2[:, 2].min())
     if traj_3 is not None:
-        time_3 = env.dt * np.arange(traj_3.shape[0])
+        time_3 = np.arange(traj_3.shape[0])
         time_max = max(time_max, time_3[-1])
         plt.plot(time_3, traj_3[:, 2]*180/np.pi, label=label_3, linewidth=3)
         y_max = max(traj_3[:, 2].max(), y_max)
         y_min = min(traj_3[:, 2].min(), y_min)
     if traj_4 is not None:
-        time_4 = env.dt * np.arange(traj_4.shape[0])
+        time_4 = np.arange(traj_4.shape[0])
         time_max = max(time_max, time_4[-1])
         plt.plot(time_4, traj_4[:, 2]*180/np.pi, label=label_4, linewidth=3)
         y_max = max(traj_4[:, 2].max(), y_max)
@@ -79,7 +79,7 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
     ax.set_ylim([max(min_angle-10, (y_min-0.1*abs(y_min))*180/np.pi), min(max_angle+10, y_max*180/np.pi*1.1)])
     
     plt.ylabel("Front tip angle (deg)")
-    plt.xlabel("time (s)")
+    plt.xlabel("timesteps")
     plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9, loc=legend_loc)
     plt.show()       
 

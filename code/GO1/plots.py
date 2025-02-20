@@ -58,8 +58,8 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
     
     if plot_z:
         
-        time_1 = env.dt * np.arange(traj_1.shape[0])
-        time_2 = env.dt * np.arange(traj_2.shape[0])
+        time_1 = np.arange(traj_1.shape[0])
+        time_2 = np.arange(traj_2.shape[0])
         time_max = max(time_1[-1], time_2[-1])
         
         fig, ax = nice_plot()
@@ -69,20 +69,20 @@ def traj_comparison(env, traj_1, label_1, traj_2, label_2, title="",
         z_max = max(traj_1[:, 2].max(), traj_2[:, 2].max())
         z_min = min(traj_1[:, 2].min(), traj_2[:, 2].min())
         if traj_3 is not None:
-            time_3 = env.dt * np.arange(traj_3.shape[0])
+            time_3 = np.arange(traj_3.shape[0])
             time_max = max(time_max, time_3[-1])
             plt.plot(time_3, traj_3[:, 2], label=label_3, linewidth=3)
             z_max = max(traj_3[:, 2].max(), z_max)
             z_min = min(traj_3[:, 2].min(), z_min)
         if traj_4 is not None:
-            time_4 = env.dt * np.arange(traj_4.shape[0])
+            time_4 = np.arange(traj_4.shape[0])
             time_max = max(time_max, time_4[-1])
             plt.plot(time_4, traj_4[:, 2], label=label_4, linewidth=3)
             z_max = max(traj_4[:, 2].max(), z_max)
             z_min = min(traj_4[:, 2].min(), z_min)
         plt.plot([0., time_max], [env.min_height, env.min_height], color="red", linestyle="dashed", linewidth=1)
         plt.ylabel("Torso height (m)")
-        plt.xlabel("time (s)")
+        plt.xlabel("timesteps")
         ax.set_ylim([max(env.min_height-0.1, z_min-0.1*abs(z_min)), z_max*1.1])
         plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
         plt.show()

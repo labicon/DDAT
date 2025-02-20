@@ -30,7 +30,7 @@ def plot_traj(env, Traj, title=""):
     assert len(Traj.shape) == 2, "Trajectory must be a 2D array"
     assert Traj.shape[1] == env.state_size, "Trajectory must contain the full state"
     T = Traj.shape[0]
-    time = env.dt * np.arange(T)
+    time = np.arange(T)
     
     fig, ax = nice_plot()
     if title is not None:
@@ -38,7 +38,7 @@ def plot_traj(env, Traj, title=""):
     plt.plot(time, Traj[:,0], label="x", linewidth=3)
     plt.plot(time, Traj[:,1], label="y", linewidth=3)
     plt.plot(time, Traj[:,2], label="z", linewidth=3)
-    plt.xlabel("t (s)")
+    plt.xlabel("timesteps")
     plt.ylabel("position (m)")
     plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
     plt.show()
@@ -48,7 +48,7 @@ def plot_traj(env, Traj, title=""):
         plt.title(title)
     for rotor_id in range(1,5):
         plt.plot(time, Traj[:, -rotor_id], label=f"rotor {rotor_id}", linewidth=3)
-    plt.xlabel("t (s)")
+    plt.xlabel("timesteps")
     plt.ylabel("angular velocity (rad/s)")
     plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)
     plt.show()
@@ -71,7 +71,7 @@ def plot_traj(env, Traj, title=""):
     plt.plot(time, rot[:, 0], label="roll x", linewidth=3)
     plt.plot(time, rot[:, 1], label="pitch y", linewidth=3)
     plt.plot(time, rot[:, 2], label="yaw z", linewidth=3)
-    plt.xlabel("t (s)")
+    plt.xlabel("timesteps")
     plt.ylabel("orientation (deg)")
     plt.yticks([-180, -90, 0, 90, 180])
     plt.legend(frameon=False, labelspacing=0.3, handletextpad=0.2, handlelength=0.9)

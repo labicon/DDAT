@@ -78,5 +78,5 @@ elif modality == "SA":
     sampled_traj, actions = out
     reward, survival, open_loop_traj = open_loop(env, s0, actions[0], attr=attr)
     print(f"{env_name} gets reward of {reward:.2f} and survives {survival*100:.0f}%")
-    env.plot_traj(open_loop_traj)
+    env.traj_comparison(sampled_traj[0], "sampled", open_loop_traj, "open-loop", title=ode.filename)
 
