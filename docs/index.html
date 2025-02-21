@@ -196,7 +196,7 @@
 	 from the training dataset corrupted by noise $\varepsilon$.
 	  If the noise level $\sigma$ of signal $\varepsilon$ is sufficiently small, $\mathcal{P}_\sigma$ projects <strong><span style="color:red;">$\tilde{\tau}$</span></strong>
 	  to the dynamically admissible trajectory <strong><span style="color:green;">$\tau_p$</span></strong>.
-	  The loss $\\| <strong><span style="color:green;">\tau_p</span></strong> - \tau\\|$ is used to update $D_\theta$.
+	  The loss $||$ <strong><span style="color:green;">$\tau_p$</span></strong>$ - \tau||$ is used to update $D_\theta$.
           </p>
         </div>
       </div>
@@ -328,7 +328,7 @@
 <p>
 All diffusion models generate state-action trajectories with projections <strong>starting</strong> from either the
 <strong><span style="color:blue;">beginning</span></strong> of inference, i.e., projecting at all noise levels, or <strong>starting</strong>
-<strong><span style="color:green;">mid-</span></strong>-inference, or project only once
+<strong><span style="color:green;">mid</span></strong>-inference, or project only once
 <strong><span style="color:DarkOrange;">after</span></strong> inference.
 </p>
 </div>
@@ -348,7 +348,7 @@ All diffusion models generate state-action trajectories with projections <strong
            Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
 	The trajectories projecting at <strong><span style="color:blue;">high</span></strong> noise levels fall significantly earlier than those
 	projecting at <strong><span style="color:green;">small</span></strong> and 
-	<strong><span style="color:green;">zero</span></strong> noise levels.
+	<strong><span style="color:DarkOrange;">zero</span></strong> noise levels.
         </h4>
       </div>
      <div class="item">
@@ -440,10 +440,12 @@ All diffusion models generate state-action trajectories with projections <strong
   <div class="hero-body">
     <div class="container">
       <h2 class="title is-3">Generating quadcopter trajectories</h2>
-	<h4 class="subtitle has-text-centered">
+	<div class="content has-text-justified">
+	<p>
        Objective: slalom between <strong><span style="color:red;">obstacles</span></strong> to reach the
 	<strong><span style="color:green;">target</span></strong>.
-      </h4>
+      </p>
+      </div>
       <div id="results-carousel" class="carousel results-carousel">
         <div class="item item-video1">
           <video poster="" id="video1" autoplay controls muted loop width="1280" height="720">
