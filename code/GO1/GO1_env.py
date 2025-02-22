@@ -132,7 +132,7 @@ class Go1Env(MujocoEnv, utils.EzPickle):
     3. The torso is upside down
     """
     
-    metadata = {"render_modes": ["human", "rgb_array", "depth_array"], "render_fps": 500}
+    metadata = {"render_modes": ["human", "rgb_array", "depth_array"], "render_fps": 50}
     
     def __init__(self, action_scale: float = 0.3, 
                  reset_noise_scale: float = 0.05, **kwargs):
@@ -149,7 +149,7 @@ class Go1Env(MujocoEnv, utils.EzPickle):
         self._action_scale = action_scale
         self._reset_noise_scale = reset_noise_scale
 
-        self._xml_dt = 0.002 # timestep from the XML file
+        self._xml_dt = 0.02 # timestep from the XML file
         MujocoEnv.__init__(self, self._xml_file, frame_skip=1,
                            observation_space=observation_space,
                            default_camera_config=DEFAULT_CAMERA_CONFIG, **kwargs)
@@ -177,16 +177,16 @@ class Go1Env(MujocoEnv, utils.EzPickle):
 
     def sample_command(self, command:np.ndarray = None):
         lin_vel_x = [-0.6, 1.5]  # min max [m/s]
-        lin_vel_y = [-0.8, 0.8]  # min max [m/s]
-        ang_vel_yaw = [-0.7, 0.7]  # min max [rad/s]
+        # lin_vel_y = [-0.8, 0.8]  # min max [m/s]
+        # ang_vel_yaw = [-0.7, 0.7]  # min max [rad/s]
 
         if command is None:
             lin_vel_x   = np.random.uniform(low=lin_vel_x[0],   high=lin_vel_x[1])
-            lin_vel_y   = np.random.uniform(low=lin_vel_y[0],   high=lin_vel_y[1])
-            ang_vel_yaw = np.random.uniform(low=ang_vel_yaw[0], high=ang_vel_yaw[1])
-            new_cmd = np.array([lin_vel_x, lin_vel_y, ang_vel_yaw])
+            # lin_vel_y   = np.random.uniform(low=lin_vel_y[0],   high=lin_vel_y[1])
+            # ang_vel_yaw = np.random.uniform(low=ang_vel_yaw[0], high=ang_vel_yaw[1])
+            new_cmd = np.array([lin_vel_x]) #, lin_vel_y, ang_vel_yaw])
         else:
-            assert command.shape == (3,)
+            assert command.shape == (self.command_size,)
             new_cmd = command
         
         return new_cmd
@@ -200,17 +200,12 @@ class Go1Env(MujocoEnv, utils.EzPickle):
 
         self.set_state(qpos, qvel)
         self.data.qacc_warmstart[:] = 0.0 # to enable reproducibility
+        obs = self.get_full_state()
 
-        state_info = {
-            'last_act': np.zeros(12),
-            'last_vel': np.zeros(12),
-            'command': self.sample_command(),
-            'kick': np.array([0.0, 0.0]),
-            'step': 0,
-        }
-        self.info = state_info
-        obs = self._get_obs(state_info)
-        return obs, state_info
+        self.info = {'command': self.sample_command(),
+                     'last_act': np.zeros(self.action_size),
+                     'step': 0}
+        return obs
 
 
     def step(self, action):
@@ -222,6 +217,7 @@ class Go1Env(MujocoEnv, utils.EzPickle):
         self.do_simulation(motor_targets, self.frame_skip)
         joint_angles = self.data.qpos[7:]        
         obs = self.get_full_state()
+        self.info['step'] += 1
         
         # done if joint limits are reached or robot is falling
         up = np.array([0.0, 0.0, 1.0])
@@ -230,10 +226,9 @@ class Go1Env(MujocoEnv, utils.EzPickle):
         done |= np.any(joint_angles > self.uppers)
         done |= self.data.qpos[2] < self.min_height
         
-        reward = self._reward_tracking_lin_vel() + self._reward_tracking_ang_vel() + self._reward_lin_vel_z() + self._reward_action_rate(action)
-        self.info['last_act'] = action
+        reward = self._reward_tracking_lin_vel() + self._reward_lin_vel_z() + self._reward_action_rate(action) # + self._reward_tracking_ang_vel()
         
-        if done: self.info['step'] = 0
+        self.info['last_act'] = action
         
         if self.render_mode == "human":
             self.render()
@@ -252,14 +247,9 @@ class Go1Env(MujocoEnv, utils.EzPickle):
         else:
             assert command.shape == (self.command_size,)
 
-        state_info = {
-            'last_act': np.zeros(12),
-            'last_vel': np.zeros(12),
-            'command': command,
-            'kick': np.array([0.0, 0.0]),
-            'step': 0,
-        }
-        self.info = state_info
+        self.info = {'command': self.sample_command(),
+                     'last_act': np.zeros(self.action_size),
+                     'step': 0}
         obs = self.get_full_state()
         return obs
     
@@ -273,14 +263,15 @@ class Go1Env(MujocoEnv, utils.EzPickle):
     def _reward_tracking_lin_vel(self):
         command = self.info['command']
         lin_vel = self.data.sensor('local_linvel').data
-        lin_vel_error = np.sum(np.square(command[:2] - lin_vel[:2]))
+        # lin_vel_error = np.sum(np.square(command[:2] - lin_vel[:2]))
+        lin_vel_error = np.sum(np.square(command[0] - lin_vel[0]))
         return 1.5*np.exp(-lin_vel_error)
 
-    def _reward_tracking_ang_vel(self):
-        command = self.info['command']
-        yaw_vel = self.data.qvel.ravel().copy()[5]
-        ang_vel_error = np.sum(np.square(command[2] - yaw_vel))
-        return 0.8*np.exp(-ang_vel_error)
+    # def _reward_tracking_ang_vel(self):
+    #     command = self.info['command']
+    #     yaw_vel = self.data.qvel.ravel().copy()[5]
+    #     ang_vel_error = np.sum(np.square(command[2] - yaw_vel))
+    #     return 0.8*np.exp(-ang_vel_error)
     
     def _reward_lin_vel_z(self):
         # Penalize z axis base linear velocity
