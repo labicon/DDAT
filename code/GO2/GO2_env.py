@@ -17,7 +17,7 @@ from gymnasium.envs.mujoco import MujocoEnv
 from GO2.plots import plot_traj, traj_comparison
 
 DEFAULT_CAMERA_CONFIG = {"distance": 6.0}
-menagerie_path = './Unitree_go2'
+menagerie_path = './GO2/Unitree_go2'
 
 def rotate_vector_by_quaternion(vec, quat):
     """
@@ -132,7 +132,7 @@ class Go2Env(MujocoEnv, utils.EzPickle):
     3. The torso is upside down
     """
     
-    metadata = {"render_modes": ["human", "rgb_array", "depth_array"], "render_fps": 50}
+    metadata = {"render_modes": ["human", "rgb_array", "depth_array"], "render_fps": 500}
     
     def __init__(self, action_scale: float = 0.3,
                  reset_noise_scale: float = 0.05, **kwargs):
@@ -140,7 +140,7 @@ class Go2Env(MujocoEnv, utils.EzPickle):
         self.name = "GO2"
         self.action_size = 12
         self.state_size = 37
-        self.command_size = 3
+        self.command_size = 1 # only x-velocity
         
         self._xml_file = os.path.join(menagerie_path, 'scene_mjx_gym.xml')
         utils.EzPickle.__init__(self, self._xml_file, **kwargs)
@@ -149,7 +149,7 @@ class Go2Env(MujocoEnv, utils.EzPickle):
         self._action_scale = action_scale
         self._reset_noise_scale = reset_noise_scale
 
-        self._xml_dt = 0.02 # timestep from the XML file
+        self._xml_dt = 0.002 # timestep from the XML file
         MujocoEnv.__init__(self, self._xml_file, frame_skip=1,
                            observation_space=observation_space,
                            default_camera_config=DEFAULT_CAMERA_CONFIG, **kwargs)
