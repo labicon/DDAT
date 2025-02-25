@@ -2,9 +2,8 @@
 
 In this project we create a novel diffusion architecture to generate dynamically feasible robot trajectories by incorporating autoregressive projections in the training and inference phase of a diffusion transformer.
 
-[Paper](https://arxiv.org/pdf/2502.15043.pdf) [Website](https://iconlab.negarmehr.com/DDAT/)
+[Paper](https://arxiv.org/pdf/2502.15043.pdf)          [Website](https://iconlab.negarmehr.com/DDAT/)
 
-![DDAT training loop](docs/pictures/DDAT_scheme.svg)
 
 
 ## Overview
