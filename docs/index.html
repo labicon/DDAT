@@ -439,7 +439,7 @@
 <section class="hero is-small">
   <div class="hero-body">
     <div class="container">
-    <h2 class="title is-3">Projections should only occur at low noise levels</h2>
+	    <h2 class="title is-3">Projections should only occur at low noise levels</h2>
 			<div class="content has-text-justified">
 				<p>
 					All diffusion models generate state-action trajectories with projections <strong>starting</strong> from either the
@@ -449,43 +449,42 @@
 				</p>
 			</div>
 	    
-      <div id="results-carousel" class="carousel results-carousel">
-       <div class="item">
-        <img src="pictures/Hopper_SA_Q2_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-		      	<div class="content has-text-justified">
-	          Statewise admissibility error over 500 Hopper trajectories. <br>
-						The admissibility error is similar between models no matter when projections start, <br>
-						because they all perform a projection at the end of inference.
-				</div>
-      </div>
-      <div class="item">
-        <img src="pictures/Hopper_SA_Q2_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-					<div class="column is-full">
-		      	<div class="content has-text-justified">
+	    <div id="results-carousel" class="carousel results-carousel">
+	      <div class="item">
+	      	<img src="pictures/Hopper_SA_Q2_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
+			   	<div class="content has-text-justified">
+						<p>
+							Statewise admissibility error over 500 Hopper trajectories. <br>
+							The admissibility error is similar between models no matter when projections start, <br>
+							because they all perform a projection at the end of inference.
+						</p>
+					</div>
+	      </div>
+	      <div class="item">
+	        <img src="pictures/Hopper_SA_Q2_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
+		      <div class="content has-text-justified">
+						<p>
            		Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
 							The trajectories projecting at <strong><span style="color:blue;">high</span></strong> noise levels fall significantly earlier than those
 							projecting at <strong><span style="color:green;">small</span></strong> and 
 							<strong><span style="color:DarkOrange;">zero</span></strong> noise levels.
-						</div>
-					</div>
-      </div>
-     <div class="item">
-      <img src="pictures/Quad_100trajs_Q2.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-      <div class="columns is-centered has-text-centered">
-				<div class="column is-full">
-		      <div class="content has-text-justified">
-       			Quadcopter trajectories tasked with slaloming between <strong><span style="color:red;">obstacles</span></strong> following the dashed line. <br>
-						Trajectories generated with projections at <strong><span style="color:blue;">high</span></strong> noise levels are incapable of performing the task, <br>
-						while trajectories with projections at 
-						<strong><span style="color:green;">small</span></strong> and
-						<strong><span style="color:DarkOrange;">zero</span></strong> noise levels succeed.
+						</p>
 					</div>
 				</div>
-      </div>
-    </div>
-  </div>
-</div>
-</div>
+	      <div class="item">
+			    <img src="pictures/Quad_100trajs_Q2.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
+						<div class="content has-text-justified">
+			     		<p>
+								Quadcopter trajectories tasked with slaloming between <strong><span style="color:red;">obstacles</span></strong> following the dashed line. <br>
+								Trajectories generated with projections at <strong><span style="color:blue;">high</span></strong> noise levels are incapable of performing the task, <br>
+								while trajectories with projections at <strong><span style="color:green;">small</span></strong> and
+								<strong><span style="color:DarkOrange;">zero</span></strong> noise levels succeed.
+							</p>
+	    			</div>
+  			</div>
+			</div>
+		</div>
+	</div>
 </section>
 
 
