@@ -167,13 +167,15 @@
 <section class="section hero is-light">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
-			<h2 class="title is-3">Overview</h2>
-			<div class="content has-text-justified">
-				<ul>
-					<li><strong>DDAT</strong> is a diffusion model generating long-horizon open-loop <strong>dynamically feasible</strong> robot trajectories.</li>
-					<li>DDAT <strong>projects</strong> predicted <strong>trajectories</strong> to make them dynamically admissible during both training and inference.</li>
-					<li><strong>No more replanning!</strong> By producing accurate trajectories, our projections eliminate the need for diffusion models to continually replan.</li>
-				</ul>
+			<div class="column is-four-fifths">
+				<h2 class="title is-3">Overview</h2>
+				<div class="content has-text-justified">
+					<ul>
+						<li><strong>DDAT</strong> is a diffusion model generating long-horizon open-loop <strong>dynamically feasible</strong> robot trajectories.</li>
+						<li>DDAT <strong>projects</strong> predicted <strong>trajectories</strong> to make them dynamically admissible during both training and inference.</li>
+						<li><strong>No more replanning!</strong> By producing accurate trajectories, our projections eliminate the need for diffusion models to continually replan.</li>
+					</ul>
+				</div>
 			</div>
     </div>
   </div>
@@ -183,22 +185,24 @@
 <section class="section hero is-small">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
-			<h2 class="title is-3">Challenge</h2>
-			<div class="content has-text-justified">
-				<ul>
-					<li>Diffusion models are <strong>stochastic</strong> by nature.</li>
-					<li>Thus, they <strong>cannot</strong> generate trajectories exactly satisfying the equations of motion of robots.</li>
-					<li>Robot dynamics can be written as
-						$$ s_{t+1} = f(s_t, a_t) $$
-					where $s_t$ is the current state and $a_t \in \mathcal A$ a feasible control action leading to the next state $s_{t+1}$.
-					</li>
-					<li>A generated trajectory $(s_0, s_1, ...)$ is <strong>dynamically feasible</strong> if and only if there exists $a_0, a_1, ... \in \mathcal A$ such that $s_1 = f(s_0, a_0)$, $s_2 = f(s_1, a_1)$, ...</li>
-					<li>This is equivalent to having each $s_{t+1}$ in the <strong>reachable set</strong> of $s_t$, i.e.,
-						$$ s_{t+1} \in \mathcal R(s_t) = \big\{	f(s_t, a) : a \in \mathcal{A} \big\}. $$
-					</li>
-					<li>Dynamics $f$ are <strong>black-box</strong> preventing calculation of reachable set $\mathcal R(s_t)$.</li>
-					<li>Almost all robots except robot arms are <strong>underactuated</strong> and hence have <strong>small low-dimensional reachable sets</strong> from which sampling is challenging, making it impossible to generate dynamically feasible trajectories with diffusion.</li>
-				</ul>
+			<div class="column is-four-fifths">
+				<h2 class="title is-3">Challenge</h2>
+				<div class="content has-text-justified">
+					<ul>
+						<li>Diffusion models are <strong>stochastic</strong> by nature.</li>
+						<li>Thus, they <strong>cannot</strong> generate trajectories exactly satisfying the equations of motion of robots.</li>
+						<li>Robot dynamics can be written as
+							$$ s_{t+1} = f(s_t, a_t) $$
+						where $s_t$ is the current state and $a_t \in \mathcal A$ a feasible control action leading to the next state $s_{t+1}$.
+						</li>
+						<li>A generated trajectory $(s_0, s_1, ...)$ is <strong>dynamically feasible</strong> if and only if there exists $a_0, a_1, ... \in \mathcal A$ such that $s_1 = f(s_0, a_0)$, $s_2 = f(s_1, a_1)$, ...</li>
+						<li>This is equivalent to having each $s_{t+1}$ in the <strong>reachable set</strong> of $s_t$, i.e.,
+							$$ s_{t+1} \in \mathcal R(s_t) = \big\{	f(s_t, a) : a \in \mathcal{A} \big\}. $$
+						</li>
+						<li>Dynamics $f$ are <strong>black-box</strong> preventing calculation of reachable set $\mathcal R(s_t)$.</li>
+						<li>Almost all robots except robot arms are <strong>underactuated</strong> and hence have <strong>small low-dimensional reachable sets</strong> from which sampling is challenging, making it impossible to generate dynamically feasible trajectories with diffusion.</li>
+					</ul>
+				</div>
 			</div>
 		</div>
   </div>
@@ -237,33 +241,35 @@
 <section class="section hero is-small">
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
-			<h2 class="title is-3">Our Approach</h2>
-			<div class="content has-text-justified">
-				We implemented four projection algorithms divided in two categories to make trajectories dynamically feasible.
-				 
-				<ul>
-					<li>Given $s_0$ the diffusion model generates $s_1, s_2, ...$ and projections make $s_{t+1}$ reachable from $s_t$.
-						<ul>
-							<li><strong>Greedy state projection</strong> chronologically projects a sequence of states onto the approximated reachable sets $\mathcal{C}$ as shown on the video above:
-								$$s_{t+1} \leftarrow \mathcal{P}(s_t, s_{t+1}) = \arg \min \big\{ ||s_{t+1} - c|| : c \in \mathcal{C} \}.$$
-							</li>
-							<li><strong>Reference state projection</strong> uses a reference trajectory to guide the projections and prevent long-horizon divergence due to myopic greedy projections:
-								$$s_{t+1} \leftarrow \mathcal{P}^\text{ref}(s_t, s_{t+1}, s^{ref}_{t+1}) = \arg \min \big\{ ||s_{t+1} - c|| + \lambda ||s^{ref}_{t+1} - c|| : c \in \mathcal{C} \}.$$
-							</li>
-						</ul>
-					</li>
-					<li>Given $s_0$ the diffusion model generates $s_1, s_2, ...$ and $a_0, a_1, ...$ while projections find $a_t$ to reach $s_{t+1}$ from $s_t$.
-						<ul>
-							<li><strong>Action projection</strong> replaces the next state by the state obtained after applying $a_t$:
-								$$s_{t+1} \leftarrow \mathcal{P}^\text{A}(s_t, a_t) = f(s_t, a_t). $$ 
-							</li>
-							<li><strong>State-Action projection</strong> calculates a feedback correction term to reach a next state closer to the prediction:
-								$$ s_{t+1} \leftarrow \mathcal{P}^\text{SA}(s_t, a_t, s_{t+1}) = f\big(s_t, a_t + \delta a_t \big) \quad \text{where} \quad \delta a_t := \pi_\theta\big( s_{t+1} - f(s_t, a_t) \big). $$ 
-							</li>
-						</ul>
-					</li>
-				</ul>
-      </div>
+			<div class="column is-four-fifths">
+				<h2 class="title is-3">Our Approach</h2>
+				<div class="content has-text-justified">
+					We implemented four projection algorithms divided in two categories to make trajectories dynamically feasible.
+					 
+					<ul>
+						<li>Given $s_0$ the diffusion model generates $s_1, s_2, ...$ and projections make $s_{t+1}$ reachable from $s_t$.
+							<ul>
+								<li><strong>Greedy state projection</strong> chronologically projects a sequence of states onto the approximated reachable sets $\mathcal{C}$ as shown on the video above:
+									$$s_{t+1} \leftarrow \mathcal{P}(s_t, s_{t+1}) = \arg \min \big\{ ||s_{t+1} - c|| : c \in \mathcal{C} \}.$$
+								</li>
+								<li><strong>Reference state projection</strong> uses a reference trajectory to guide the projections and prevent long-horizon divergence due to myopic greedy projections:
+									$$s_{t+1} \leftarrow \mathcal{P}^\text{ref}(s_t, s_{t+1}, s^{ref}_{t+1}) = \arg \min \big\{ ||s_{t+1} - c|| + \lambda ||s^{ref}_{t+1} - c|| : c \in \mathcal{C} \}.$$
+								</li>
+							</ul>
+						</li>
+						<li>Given $s_0$ the diffusion model generates $s_1, s_2, ...$ and $a_0, a_1, ...$ while projections find $a_t$ to reach $s_{t+1}$ from $s_t$.
+							<ul>
+								<li><strong>Action projection</strong> replaces the next state by the state obtained after applying $a_t$:
+									$$s_{t+1} \leftarrow \mathcal{P}^\text{A}(s_t, a_t) = f(s_t, a_t). $$ 
+								</li>
+								<li><strong>State-Action projection</strong> calculates a feedback correction term to reach a next state closer to the prediction:
+									$$ s_{t+1} \leftarrow \mathcal{P}^\text{SA}(s_t, a_t, s_{t+1}) = f\big(s_t, a_t + \delta a_t \big) \quad \text{where} \quad \delta a_t := \pi_\theta\big( s_{t+1} - f(s_t, a_t) \big). $$ 
+								</li>
+							</ul>
+						</li>
+					</ul>
+	      </div>
+			</div>
     </div>
   </div>
 </section>
@@ -378,7 +384,7 @@
 
 
 
-<section class="hero teaser">
+<section class="section hero is-light">
   <div class="container is-max-desktop">
     <div class="hero-body">
       <video poster="" id="tree" autoplay controls muted loop width="337" height="600" style="margin: auto;!important">
