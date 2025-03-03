@@ -319,7 +319,7 @@
       <div id="results-carousel" class="carousel results-carousel">
         <div class="item">
 	        <img src="pictures/Hopper_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-        	<h6 class="subtitle has-text-centered" style="font-size: .67em !important;">
+        	<h6 class="subtitle has-text-centered" style="font-size: 16px;">
 						Statewise admissibility error over 500 Hopper trajectories. <br>
 						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using <br>
 						<strong><span style="color:DarkOrange;">projections at inference</span></strong> or
@@ -329,7 +329,7 @@
 	      </div>
 	      <div class="item">
         	<img src="pictures/Hopper_CAE_500.svg" alt="Cumulative admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-        	<h6 class="subtitle has-text-centered" style="font-size: .67em !important;">
+        	<h6 class="subtitle has-text-centered" style="font-size: 16px;">
 						Cumulative admissibility error over 500 Hopper trajectories. <br>
 						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using <br>
 						<strong><span style="color:DarkOrange;">projections at inference</span></strong> or
@@ -339,7 +339,7 @@
 	      </div>
 	      <div class="item">
 	        <img src="pictures/Hopper_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-	        <h5 class="subtitle has-text-centered" style="font-size: 14px;">
+	        <h5 class="subtitle has-text-centered" style="font-size: 16px;">
 						Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
 						The trajectories <strong><span style="color:blue;">without projections</span></strong> and those with
 						<strong><span style="color:DarkOrange;">projections at inference</span></strong> <br>
@@ -360,7 +360,7 @@
 		    </div>
 		    <div class="item">
 		    	<img src="pictures/Walker_CAE_400.svg" alt="Cumulative admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-				 	<h6 class="subtitle has-text-centered">
+				 	<h6 class="subtitle has-text-centered" style="font-size: 16px;">
 						Cumulative admissibility error over 400 Walker trajectories. <br>
 						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using
 						<strong><span style="color:DarkOrange;">projections at inference</span></strong>. <br>
@@ -370,7 +370,7 @@
 		    </div>
 		    <div class="item">
 	      <img src="pictures/Walker_falling_ratio_400.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-	        <h6 class="subtitle has-text-centered">
+	        <h6 class="subtitle has-text-centered" style="font-size: 16px;">
 						Ratios of open-loop Walker trajectories having fallen at a given timestep. <br>
 						The trajectories <strong><span style="color:blue;">without projections</span></strong> and those with
 						<strong><span style="color:DarkOrange;">projections at inference</span></strong> <br>
@@ -428,35 +428,29 @@
 	    <div id="results-carousel" class="carousel results-carousel">
 	      <div class="item">
 	      	<img src="pictures/Hopper_SA_Q2_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-			   	<div>
-						<p>
-							Statewise admissibility error over 500 Hopper trajectories. <br>
-							The admissibility error is similar between models no matter when projections start, <br>
-							because they all perform a projection at the end of inference.
-						</p>
-					</div>
+			   	<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Statewise admissibility error over 500 Hopper trajectories. <br>
+						The admissibility error is similar between models no matter when projections start, <br>
+						because they all perform a projection at the end of inference.
+					</h6>
 	      </div>
 	      <div class="item">
 	        <img src="pictures/Hopper_SA_Q2_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-		      <div>
-						<p>
-           		Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
-							The trajectories projecting at <strong><span style="color:blue;">high</span></strong> noise levels fall significantly earlier than those
-							projecting at <strong><span style="color:green;">small</span></strong> and 
-							<strong><span style="color:DarkOrange;">zero</span></strong> noise levels.
-						</p>
-					</div>
+		      <h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
+						The trajectories projecting at <strong><span style="color:blue;">high</span></strong> noise levels fall significantly earlier than those
+						projecting at <strong><span style="color:green;">small</span></strong> and 
+						<strong><span style="color:DarkOrange;">zero</span></strong> noise levels.
+					</h6>
 				</div>
 	      <div class="item">
 			    <img src="pictures/Quad_100trajs_Q2.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-					<div>
-			     	<p>
-							Quadcopter trajectories tasked with slaloming between <strong><span style="color:red;">obstacles</span></strong> following the dashed line. <br>
-							Trajectories generated with projections at <strong><span style="color:blue;">high</span></strong> noise levels are incapable of performing the task, <br>
-							while trajectories with projections at <strong><span style="color:green;">small</span></strong> and
-							<strong><span style="color:DarkOrange;">zero</span></strong> noise levels succeed.
-						</p>
-					</div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Quadcopter trajectories tasked with slaloming between <strong><span style="color:red;">obstacles</span></strong> following the dashed line. <br>
+						Trajectories generated with projections at <strong><span style="color:blue;">high</span></strong> noise levels are incapable of performing the task, <br>
+						while trajectories with projections at <strong><span style="color:green;">small</span></strong> and
+						<strong><span style="color:DarkOrange;">zero</span></strong> noise levels succeed.
+					</h6>
   			</div>
 			</div>
 		</div>
@@ -547,110 +541,78 @@
           <video poster="" id="video1" autoplay controls muted loop width="1280" height="720">
             <source src="videos/S_sampled_ID_above.mp4" type="video/mp4">
 					</video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-				      <div class="content has-text-justified">
-					      Model generating state trajectories without projections. <br>
-					      The sampled trajectory would succeed if it was feasible, <br>
-								but <strong><span style="color:DarkOrange;">inverse dynamics</span></strong> shows how far off the trajectory actually is.
-							</div>
-						</div>
-     			</div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Model generating state trajectories without projections. <br>
+						The sampled trajectory would succeed if it was feasible, <br>
+						but <strong><span style="color:DarkOrange;">inverse dynamics</span></strong> shows how far off the trajectory actually is.
+     			</h6>
         </div>
         <div class="item item-video2">
           <video poster="" id="video2" autoplay controls muted loop width="1280" height="720">
             <source src="videos/S_inference_ID_above.mp4" type="video/mp4">
           </video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-				      <div class="content has-text-justified">
-				        Model generating state trajectories with projections only at inference. <br>
-				        The sampled trajectory is close to feasible, but not sufficiently to<br>
-							  prevent the <strong><span style="color:DarkOrange;">inverse dynamics</span></strong> from crashing.
-							</div>
-						</div>
-      		</div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Model generating state trajectories with projections only at inference. <br>
+						The sampled trajectory is close to feasible, but not sufficiently to<br>
+						prevent the <strong><span style="color:DarkOrange;">inverse dynamics</span></strong> from crashing.
+      		</h6>
         </div>
         <div class="item item-video3">
           <video poster="" id="video3" autoplay controls muted loop width="1280" height="720">\
             <source src="videos/S_ref_proj_above.mp4" type="video/mp4">
           </video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-			      	<div class="content has-text-justified">
-	       			 Model generating state trajectories trained with reference projections. <br>
-	       			 The sampled trajectory is very close to the <strong><span style="color:DarkOrange;">inverse dynamics</span></strong> and both succeed.
-							</div>
-						</div>
-	      	</div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+					  Model generating state trajectories trained with reference projections. <br>
+					  The sampled trajectory is very close to the <strong><span style="color:DarkOrange;">inverse dynamics</span></strong> and both succeed.
+	      	</h6>
         </div>
-			<div class="item item-video4">
+			  <div class="item item-video4">
           <video poster="" id="video4" autoplay controls muted loop width="1280" height="720">\
             <source src="videos/S_ref_proj_track.mp4" type="video/mp4">
           </video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-				      <div class="content has-text-justified">
-		       			Model generating state trajectories trained with reference projections. <br>
-       					The sampled trajectory slaloms between the obstacles and reaches the target.
-      				</div>
-						</div>
-     			</div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Model generating state trajectories trained with reference projections. <br>
+						The sampled trajectory slaloms between the obstacles and reaches the target.
+     			</h6>
         </div>
-		 	<div class="item item-video5">
+		 		<div class="item item-video5">
           <video poster="" id="video5" autoplay controls muted loop width="1280" height="720">
             <source src="videos/SA_sampled_ol_above.mp4" type="video/mp4">
 					</video>
-					<div class="columns is-centered has-text-centered">
-							<div class="column is-full">
-					      <div class="content has-text-justified">
-							     Model generating states and actions without projections. <br>
-							     The sampled trajectory would succeed if it was feasible, <br>
-										but the <strong><span style="color:DarkOrange;">open-loop</span></strong> shows how far off the trajectory actually is.
-							</div>
-						</div>
-		      </div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Model generating states and actions without projections. <br>
+						The sampled trajectory would succeed if it was feasible, <br>
+						but the <strong><span style="color:DarkOrange;">open-loop</span></strong> shows how far off the trajectory actually is.
+					</h6>
         </div>
         <div class="item item-video6">
           <video poster="" id="video6" autoplay controls muted loop width="1280" height="720">
             <source src="videos/SA_inference_proj_above.mp4" type="video/mp4">
           </video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-				      <div class="content has-text-justified">
-		       			Model generating states and actions with projections only at inference. <br>
-		       			The sampled trajectory flies through the obstacle,<br>
-								while the <strong><span style="color:DarkOrange;">open-loop</span></strong> diverges.
-							</div>
-						</div>
-		      </div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Model generating states and actions with projections only at inference. <br>
+						The sampled trajectory flies through the obstacle,<br>
+						while the <strong><span style="color:DarkOrange;">open-loop</span></strong> diverges.
+					</h6>
         </div>
         <div class="item item-video7">
           <video poster="" id="video7" autoplay controls muted loop width="1280" height="720">\
             <source src="videos/SA_proj_sampled_ol_above.mp4" type="video/mp4">
           </video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-		      		<div class="content has-text-justified">
-       					Model generating states and actions trained with SA-projections. <br>
-				       	The sampled trajectory is admissible as it matches its <br>
-								<strong><span style="color:DarkOrange;">open-loop</span></strong> realisation and both succeed.
-							</div>
-						</div>
-	     	 </div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+						Model generating states and actions trained with SA-projections. <br>
+						The sampled trajectory is admissible as it matches its <br>
+						<strong><span style="color:DarkOrange;">open-loop</span></strong> realisation and both succeed.
+	     	  </h6>
         </div>
 				<div class="item item-video8">
           <video poster="" id="video8" autoplay controls muted loop width="1280" height="720">\
             <source src="videos/SA_proj_ol_track.mp4" type="video/mp4">
           </video>
-					<div class="columns is-centered has-text-centered">
-						<div class="column is-full">
-						  <div class="content has-text-justified">
-				       Model generating states and actions trained with reference projections. <br>
-				       The sampled trajectory slaloms between the obstacles and reaches the target.
-							</div>
-						</div>
-      		</div>
+					<h6 class="subtitle has-text-centered" style="font-size: 16px;">
+					  Model generating states and actions trained with reference projections. <br>
+					  The sampled trajectory slaloms between the obstacles and reaches the target.
+					</h6>
         </div>
       </div>
     </div>
