@@ -81,61 +81,61 @@
         <div class="columns is-centered">
           <div class="column has-text-centered">
             <h1 class="title is-1 publication-title">DDAT: Diffusion Policies Enforcing Dynamically Admissible Robot Trajectories</h1>
-		<div class="is-size-5 publication-authors"> <!-- Paper authors -->
+						<div class="is-size-5 publication-authors"> <!-- Paper authors -->
               <span class="author-block"><a href="https://jean-baptistebouvier.github.io/" target="_blank">Jean-Baptiste Bouvier</a>,</span>
-	      <span class="author-block"><a href="https://kh-ryu.github.io/" target="_blank">Kanghyun Ryu</a>,</span>
+	      			<span class="author-block"><a href="https://kh-ryu.github.io/" target="_blank">Kanghyun Ryu</a>,</span>
               <span class="author-block"><a href="https://kartik-nagpal.github.io/" target="_blank">Kartik Nagpal</a>,</span>
-	      <span class="author-block"><a href="https://qiayuanl.github.io/" target="_blank">Qiayuan Liao</a>,</span>
-	      <span class="author-block"><a href="https://hybrid-robotics.berkeley.edu/koushil/" target="_blank">Koushil Sreenath</a>,</span>
+				      <span class="author-block"><a href="https://qiayuanl.github.io/" target="_blank">Qiayuan Liao</a>,</span>
+				      <span class="author-block"><a href="https://hybrid-robotics.berkeley.edu/koushil/" target="_blank">Koushil Sreenath</a>,</span>
               <span class="author-block"><a href="https://negarmehr.com/" target="_blank">Negar Mehr</a></span><br>
-		ArXiv Preprint (Under Review)	<!--Robotics: Science and Systems (RSS) 2025-->
-                  </div>
+							ArXiv Preprint (Under Review)	<!--Robotics: Science and Systems (RSS) 2025-->
+            </div>
 
-                  <div class="column has-text-centered">
-                    <div class="publication-links">
-                         <!-- Arxiv PDF link -->
-                      <span class="link-block">
-                        <a href="https://arxiv.org/pdf/2502.15043.pdf" target="_blank"
-                        class="external-link button is-normal is-rounded is-dark">
-                        <span class="icon">
-                          <i class="fas fa-file-pdf"></i>
-                        </span>
-                        <span>Paper</span>
-                      </a>
-                    </span>
+							<div class="column has-text-centered">
+								<div class="publication-links">
+										 <!-- Arxiv PDF link -->
+									<span class="link-block">
+										<a href="https://arxiv.org/pdf/2502.15043.pdf" target="_blank"
+										class="external-link button is-normal is-rounded is-dark">
+										<span class="icon">
+											<i class="fas fa-file-pdf"></i>
+										</span>
+										<span>Paper</span>
+									</a>
+								</span>
 
-                  <!-- Github link -->
-                  <span class="link-block">
-                    <a href="https://github.com/labicon/DDAT/tree/main/code" target="_blank"
-                    class="external-link button is-normal is-rounded is-dark">
-                    <span class="icon">
-                      <i class="fab fa-github"></i>
-                    </span>
-                    <span>Code</span>
-                  </a>
-                </span>
+							<!-- Github link -->
+							<span class="link-block">
+								<a href="https://github.com/labicon/DDAT/tree/main/code" target="_blank"
+								class="external-link button is-normal is-rounded is-dark">
+								<span class="icon">
+									<i class="fab fa-github"></i>
+								</span>
+								<span>Code</span>
+							</a>
+						</span>
 
-                <!-- ArXiv abstract Link -->
-                <span class="link-block">
-                  <a href="https://arxiv.org/abs/2502.15043" target="_blank"
-                  class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                    <i class="ai ai-arxiv"></i>
-                  </span>
-                  <span>arXiv</span>
-                </a>
-              </span>
+						<!-- ArXiv abstract Link -->
+						<span class="link-block">
+							<a href="https://arxiv.org/abs/2502.15043" target="_blank"
+							class="external-link button is-normal is-rounded is-dark">
+							<span class="icon">
+								<i class="ai ai-arxiv"></i>
+							</span>
+							<span>arXiv</span>
+						</a>
+					</span>
 
-		<!-- Blog Link -->
-                <!--span class="link-block">
-                  <a href="https://jean-baptistebouvier.github.io/assets/blog_posts/policed_RL/" target="_blank"
-                  class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-		    <i class="fas fa-scroll"></i>
-                  </span>
-                  <span>Blog</span>
-                </a>
-		</span-->
+<!-- Blog Link -->
+						<!--span class="link-block">
+							<a href="https://jean-baptistebouvier.github.io/assets/blog_posts/policed_RL/" target="_blank"
+							class="external-link button is-normal is-rounded is-dark">
+							<span class="icon">
+		<i class="fas fa-scroll"></i>
+							</span>
+							<span>Blog</span>
+						</a>
+</span-->
 			    
             </div>
 					</div>
@@ -315,97 +315,73 @@
 <section class="hero is-small">
   <div class="hero-body">
     <div class="container">
-     <h2 class="title is-3">Projections make trajectories admissible and better</h2>
+      <h2 class="title is-3">Projections make trajectories admissible and better</h2>
       <div id="results-carousel" class="carousel results-carousel">
-       <div class="item">
-        <img src="pictures/Hopper_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-        <div class="columns is-centered has-text-centered">
-					<div class="column is-full">
-			      <div class="content has-text-justified">
-		          Statewise admissibility error over 500 Hopper trajectories. <br>
-							The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using <br>
-							<strong><span style="color:DarkOrange;">projections at inference</span></strong> or
-							<strong><span style="color:green;">training with projections $\mathcal{P}^\text{ref}$</span></strong>. <br>
-							All diffusion models generate only state trajectories.
-						</div>
-					</div>
-				</div>
-      </div>
-      <div class="item">
-        <img src="pictures/Hopper_CAE_500.svg" alt="Cumulative admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-        <div class="columns is-centered has-text-centered">
-					<div class="column is-full">
-			      <div class="content has-text-justified">
-	           	Cumulative admissibility error over 500 Hopper trajectories. <br>
-							The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using <br>
-							<strong><span style="color:DarkOrange;">projections at inference</span></strong> or
-							<strong><span style="color:green;">training with projections $\mathcal{P}^\text{ref}$</span></strong>. <br>
-							All diffusion models generate only state trajectories.
-						</div>
-					</div>
+        <div class="item">
+	        <img src="pictures/Hopper_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
+        	<p>
+						Statewise admissibility error over 500 Hopper trajectories. <br>
+						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using <br>
+						<strong><span style="color:DarkOrange;">projections at inference</span></strong> or
+						<strong><span style="color:green;">training with projections $\mathcal{P}^\text{ref}$</span></strong>. <br>
+						All diffusion models generate only state trajectories.
+					</p>
 	      </div>
-      </div>
-      <div class="item">
-        <img src="pictures/Hopper_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-        <div class="columns is-centered has-text-centered">
-					<div class="column is-full">
-			      <div class="content has-text-justified">
-	           Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
-						 The trajectories <strong><span style="color:blue;">without projections</span></strong> and those with
-						 <strong><span style="color:DarkOrange;">projections at inference</span></strong> <br>
-							start to fall significantly earlier than those
-						 <strong><span style="color:green;">training with projections $\mathcal{P}^\text{ref}$</span></strong>. <br>
-						 All diffusion models generate only state trajectories.
-						</div>
-					</div>
+	      <div class="item">
+        	<img src="pictures/Hopper_CAE_500.svg" alt="Cumulative admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
+        	<p>
+						Cumulative admissibility error over 500 Hopper trajectories. <br>
+						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using <br>
+						<strong><span style="color:DarkOrange;">projections at inference</span></strong> or
+						<strong><span style="color:green;">training with projections $\mathcal{P}^\text{ref}$</span></strong>. <br>
+						All diffusion models generate only state trajectories.
+		      </p>
+	      </div>
+	      <div class="item">
+	        <img src="pictures/Hopper_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
+	        <p>
+						Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
+						The trajectories <strong><span style="color:blue;">without projections</span></strong> and those with
+						<strong><span style="color:DarkOrange;">projections at inference</span></strong> <br>
+						start to fall significantly earlier than those
+						<strong><span style="color:green;">training with projections $\mathcal{P}^\text{ref}$</span></strong>. <br>
+						All diffusion models generate only state trajectories.
+					</p>
       	</div>
-      </div>
-     <div class="item">
-      <img src="pictures/Walker_SAE_400.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-      <div class="columns is-centered has-text-centered">
-				<div class="column is-full">
-		      <div class="content has-text-justified">
-           Statewise admissibility error over 400 Walker trajectories. <br>
-					The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using
-					<strong><span style="color:DarkOrange;">projections at inference</span></strong>. <br>
-					Our model <strong><span style="color:green;">trained with projections $\mathcal{P}^\text{SA}$</span></strong> has no error. <br>
-					All diffusion models generate states and actions.
-					</div>
-				</div>
-      </div>
-    </div>
-    <div class="item">
-    	<img src="pictures/Walker_CAE_400.svg" alt="Cumulative admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-		 	<div class="columns is-centered has-text-centered">
-				<div class="column is-full">
-					<div class="content has-text-justified">
-          	Cumulative admissibility error over 400 Walker trajectories. <br>
+	     	<div class="item">
+	     		<img src="pictures/Walker_SAE_400.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
+	      	<p>
+						Statewise admissibility error over 400 Walker trajectories. <br>
 						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using
 						<strong><span style="color:DarkOrange;">projections at inference</span></strong>. <br>
 						Our model <strong><span style="color:green;">trained with projections $\mathcal{P}^\text{SA}$</span></strong> has no error. <br>
 						All diffusion models generate states and actions.
-					</div>
-				</div>
-      </div>
-    </div>
-    <div class="item">
-      <img src="pictures/Walker_falling_ratio_400.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-        <div class="columns is-centered has-text-centered">
-					<div class="column is-full">
-		      	<div class="content has-text-justified">
-           		Ratios of open-loop Walker trajectories having fallen at a given timestep. <br>
-							The trajectories <strong><span style="color:blue;">without projections</span></strong> and those with
-							<strong><span style="color:DarkOrange;">projections at inference</span></strong> <br>
-								start to fall significantly earlier than those
-							<strong><span style="color:green;">training with projections $\mathcal{P}^\text{SA}$</span></strong>. <br>
-							All diffusion models generate states and actions.
-						</div>
-					</div>
-      	</div>
-      </div>
-  </div>
-</div>
-</div>
+					</p>
+		    </div>
+		    <div class="item">
+		    	<img src="pictures/Walker_CAE_400.svg" alt="Cumulative admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
+				 	<p>
+						Cumulative admissibility error over 400 Walker trajectories. <br>
+						The error <strong><span style="color:blue;">without projections</span></strong> is much larger than when using
+						<strong><span style="color:DarkOrange;">projections at inference</span></strong>. <br>
+						Our model <strong><span style="color:green;">trained with projections $\mathcal{P}^\text{SA}$</span></strong> has no error. <br>
+						All diffusion models generate states and actions.
+		      </p>
+		    </div>
+		    <div class="item">
+	      <img src="pictures/Walker_falling_ratio_400.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
+	        <p>
+						Ratios of open-loop Walker trajectories having fallen at a given timestep. <br>
+						The trajectories <strong><span style="color:blue;">without projections</span></strong> and those with
+						<strong><span style="color:DarkOrange;">projections at inference</span></strong> <br>
+							start to fall significantly earlier than those
+						<strong><span style="color:green;">training with projections $\mathcal{P}^\text{SA}$</span></strong>. <br>
+						All diffusion models generate states and actions.
+	      	</p>
+	      </div>
+			</div>
+	  </div>
+	</div>
 </section>
 <!-- End image carousel -->
 
@@ -452,7 +428,7 @@
 	    <div id="results-carousel" class="carousel results-carousel">
 	      <div class="item">
 	      	<img src="pictures/Hopper_SA_Q2_SAE_500.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-			   	<div class="content has-text-justified">
+			   	<div>
 						<p>
 							Statewise admissibility error over 500 Hopper trajectories. <br>
 							The admissibility error is similar between models no matter when projections start, <br>
@@ -462,7 +438,7 @@
 	      </div>
 	      <div class="item">
 	        <img src="pictures/Hopper_SA_Q2_falling_ratio_500.svg" alt="Falling ratios" style="height:400px !important; display:block !important; margin:auto !important;"/>
-		      <div class="content has-text-justified">
+		      <div>
 						<p>
            		Ratios of open-loop Hopper trajectories having fallen at a given timestep. <br>
 							The trajectories projecting at <strong><span style="color:blue;">high</span></strong> noise levels fall significantly earlier than those
@@ -473,14 +449,14 @@
 				</div>
 	      <div class="item">
 			    <img src="pictures/Quad_100trajs_Q2.svg" alt="Statewise admissibility error" style="height:400px !important; display:block !important; margin:auto !important;"/>
-						<div class="content has-text-justified">
-			     		<p>
-								Quadcopter trajectories tasked with slaloming between <strong><span style="color:red;">obstacles</span></strong> following the dashed line. <br>
-								Trajectories generated with projections at <strong><span style="color:blue;">high</span></strong> noise levels are incapable of performing the task, <br>
-								while trajectories with projections at <strong><span style="color:green;">small</span></strong> and
-								<strong><span style="color:DarkOrange;">zero</span></strong> noise levels succeed.
-							</p>
-	    			</div>
+					<div>
+			     	<p>
+							Quadcopter trajectories tasked with slaloming between <strong><span style="color:red;">obstacles</span></strong> following the dashed line. <br>
+							Trajectories generated with projections at <strong><span style="color:blue;">high</span></strong> noise levels are incapable of performing the task, <br>
+							while trajectories with projections at <strong><span style="color:green;">small</span></strong> and
+							<strong><span style="color:DarkOrange;">zero</span></strong> noise levels succeed.
+						</p>
+					</div>
   			</div>
 			</div>
 		</div>
