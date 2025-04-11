@@ -29,6 +29,7 @@ A trajectory $\tau = \\{s_0, s_1, ...\\}$ is **admissible** if each $s_{t+1}$ is
 $$\mathcal{R}(s_t) = \\{ f(s_t, a)\ \text{for all}\ a \in \mathcal{A} \\}.$$
 
 To generate admissible trajectories we then design autoregressive projectors $\mathcal P$ iteratively projecting each $s_{t+1}$ onto $\mathcal{R}(s_t)$ for all $t$.
+These projectors are incorporated into the training and inference of our diffusion models.
 
 ## Organization
 
@@ -41,7 +42,7 @@ To generate admissible trajectories we then design autoregressive projectors $\m
 @inproceedings{bouvier2025ddat,
         title = {DDAT: Diffusion Policies Enforcing Dynamically Admissible Robot Trajectories},
         author = {Bouvier, Jean-Baptiste and Ryu, Kanghyun and Nagpal, Kartik and Liao, Qiayuan and Sreenath, Koushil and Mehr, Negar},
-        booktitle = {arxiv.org/abs/2502.15043},
+        booktitle = {Robotics: Science and Systems (RSS)},
         year = {2025}
       }
 ```
