@@ -458,37 +458,6 @@
 </section>
 
 
-
-
-
-	
-<!--section class="section hero is-small">
-  <div class="container">
-    <div class="columns is-centered">
-      <div class="column is-8">
-	<div class="content has-text-justified">
-            <p>
-              We implement POLICEd RL on the KUKA arm and train it to reach a target while avoiding a constraint area, as illustrated above.
-	      We use the classic RL algorithm Twin Delayed DDPG <a href="#TD3">(TD3)</a> with POLICEd layers.
-	      We compare this POLICEd implementation against a TD3 baseline, a Constrained Policy Optimization <a href="#CPO">(CPO)</a> soft-constraint algorithm,
-	      and a learned <a href="#yang2023model">PPO-Barrier</a> safety certificate.
-            </p>
-        </div>
-          <img src="static/images/comparison.png" alt="" height="400px"/>
-          <div class="content has-text-justified">
-            <p>
-              Metrics comparison for different methods based on a 500 episode deployment with the fully-trained policies on the safe arm task.
-              The completion task only assess whether the target is eventually reached, even if the constraint is not respected.
-	      The most significant metric is the average percentage of constraint satisfaction, which shows that only POLICEd RL guarantees constraint satisfaction. 
-              For all metrics higher is better (&uarr;). 
-            </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</section-->
-
-
 <!-- Presentation video-->
 <!--section class="hero is-small is-light">
   <div class="hero-body">
@@ -643,11 +612,11 @@
 
 
 <!-- Paper poster -->
-<!--section class="hero is-small is-light">
+<section class="hero is-small is-light">
   <div class="hero-body">
     <div class="container">
       <h2 class="title">Poster</h2>
-      <iframe  src="static/pdfs/RSS poster.pdf" width="100%" height="1100"></iframe>
+      <iframe  src="poster.pdf" width="100%" height="1100"></iframe>
       </div>
     </div>
   </section>
